@@ -49,6 +49,85 @@ class ServiceAddonAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     search_fields = ("name",)
 
+@admin.register(Branch)
+class BranchAdmin(admin.ModelAdmin):
+    list_display = ('get_branch_name', 'code', 'region', 'get_parent', 'get_sub_branches_count', 'get_users_count', 'is_active')
+    list_filter = ('is_active', 'parent', 'created_at')
+    search_fields = ('name', 'code', 'region')
+    readonly_fields = ('created_at', 'get_branch_hierarchy')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'code', 'region', 'is_active'),
+        }),
+        ('Hierarchy', {
+            'fields': ('parent', 'get_branch_hierarchy'),
+            'classes': ('wide',),
+        }),
+        ('Metadata', {
+            'fields': ('created_at',),
+            'classes': ('collapse',),
+        }),
+    )
+
+    def get_branch_name(self, obj):
+        if obj.parent:
+            return f"→ {obj.name}"
+        return obj.name
+    get_branch_name.short_description = 'Branch Name'
+
+    def get_parent(self, obj):
+        return obj.parent.name if obj.parent else '—'
+    get_parent.short_description = 'Parent Branch'
+
+    def get_sub_branches_count(self, obj):
+        count = obj.sub_branches.count()
+        return f"{count} sub-branch{'es' if count != 1 else ''}" if count > 0 else '—'
+    get_sub_branches_count.short_description = 'Sub-Branches'
+
+    def get_users_count(self, obj):
+        count = obj.profiles.count()
+        return f"{count} user{'s' if count != 1 else ''}" if count > 0 else '—'
+    get_users_count.short_description = 'Users'
+
+    def get_branch_hierarchy(self, obj):
+        if obj.parent is None:
+            return "This is a main branch"
+        else:
+            return f"Sub-branch of: {obj.parent.name}"
+    get_branch_hierarchy.short_description = 'Branch Type'
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # Non-superuser staff can only manage their branch and sub-branches
+        user_branch = getattr(request.user, 'profile', None) and request.user.profile.branch
+        if user_branch and user_branch.parent is None:
+            # Main branch user sees their main branch and sub-branches
+            return qs.filter(Q(id=user_branch.id) | Q(parent=user_branch))
+        elif user_branch:
+            # Sub-branch user sees only their branch
+            return qs.filter(id=user_branch.id)
+        return qs.none()
+
+    def has_add_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        # Only main branch superusers can add branches
+        user_branch = getattr(request.user, 'profile', None) and request.user.profile.branch
+        return user_branch and user_branch.is_main_branch()
+
+    def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return False
+        user_branch = getattr(request.user, 'profile', None) and request.user.profile.branch
+        if not user_branch:
+            return False
+        # Can only delete your own branch or sub-branches
+        return obj.id == user_branch.id or obj.parent == user_branch
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ("order_number", "customer", "type", "status", "priority", "created_at", "started_at", "completed_at", "cancelled_at", "signed_by", "branch")
