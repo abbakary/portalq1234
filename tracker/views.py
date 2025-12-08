@@ -5690,7 +5690,7 @@ def user_edit(request: HttpRequest, pk: int):
     from .forms import AdminUserForm
     u = get_object_or_404(User, pk=pk)
     if request.method == 'POST':
-        form = AdminUserForm(request.POST, instance=u)
+        form = AdminUserForm(request.POST, instance=u, editor=request.user)
         if form.is_valid():
             updated_user = form.save()
             add_audit_log(request.user, 'user_update', f'Updated user {updated_user.username}')
@@ -5699,7 +5699,7 @@ def user_edit(request: HttpRequest, pk: int):
         else:
             messages.error(request, 'Please correct errors and try again')
     else:
-        form = AdminUserForm(instance=u)
+        form = AdminUserForm(instance=u, editor=request.user)
     return render(request, 'tracker/user_edit.html', { 'form': form, 'user_obj': u })
 
 @login_required
