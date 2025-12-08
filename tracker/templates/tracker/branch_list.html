@@ -260,11 +260,18 @@
   <div class="header-section">
     <div class="header-title">Branches</div>
     <div class="header-subtitle">Manage your service centers and branches</div>
+    {% if user_can_create_branches %}
     <div class="header-actions">
       <button type="button" class="add-branch-btn" data-bs-toggle="modal" data-bs-target="#addBranchModal">
-        <i class="fa fa-plus" style="margin-right: 6px;"></i>Add Branch
+        <i class="fa fa-plus" style="margin-right: 6px;"></i>Add Main Branch
       </button>
+      {% if show_all_branches and user_branch and user_branch.parent == None %}
+      <button type="button" class="add-branch-btn" data-bs-toggle="modal" data-bs-target="#addSubBranchModal" style="background: #0066cc;">
+        <i class="fa fa-plus" style="margin-right: 6px;"></i>Add Sub-Branch
+      </button>
+      {% endif %}
     </div>
+    {% endif %}
   </div>
 
   {% if branches %}
