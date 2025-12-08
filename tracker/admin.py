@@ -24,17 +24,6 @@ class CustomUserAdmin(BaseUserAdmin):
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 
-@admin.register(Branch)
-class BranchAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'region', 'is_active', 'user_count')
-    list_filter = ('is_active', 'region')
-    search_fields = ('name', 'code', 'region')
-    readonly_fields = ('created_at',)
-
-    def user_count(self, obj):
-        return obj.profiles.count()
-    user_count.short_description = 'Users'
-
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
     list_display = ("code", "full_name", "phone", "customer_type", "total_visits", "last_visit", "branch")
