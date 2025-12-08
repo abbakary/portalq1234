@@ -478,8 +478,8 @@ def started_order_detail(request, order_id):
                         pass
 
                 order.save()
-                # Redirect to refresh page and show changes
-                return redirect('tracker:started_order_detail', order_id=order.id)
+                # Redirect to dashboard after updating order details
+                return redirect('tracker:started_orders_dashboard')
             except Exception as e:
                 logger.error(f"Error updating order details: {e}")
 

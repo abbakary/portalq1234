@@ -4,218 +4,490 @@
 {% block title %}Branch Management{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Branch Management</h5>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBranchModal">
-                        <i class="fa fa-plus me-1"></i> Add Branch
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Code</th>
-                                    <th>Region</th>
-                                    <th>Status</th>
-                                    <th>Created</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for branch in branches %}
-                                <tr>
-                                    <td><strong>{{ branch.name }}</strong></td>
-                                    <td><code>{{ branch.code }}</code></td>
-                                    <td>{{ branch.region|default:"-" }}</td>
-                                    <td>
-                                        {% if branch.is_active %}
-                                            <span class="badge bg-success">Active</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Inactive</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ branch.created_at|date:"M d, Y" }}</td>
-                                    <td>
-                                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                                onclick="editBranch({{ branch.id }}, '{{ branch.name }}', '{{ branch.code }}', '{{ branch.region|default:'' }}', {{ branch.is_active|yesno:'true,false' }})">
-                                            <i class="fa fa-edit"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted">No branches found</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+<style>
+  .branch-container {
+    padding: 20px 0;
+  }
+
+  .header-section {
+    margin-bottom: 24px;
+  }
+
+  .header-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .header-subtitle {
+    font-size: 14px;
+    color: #666;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .add-branch-btn {
+    padding: 10px 20px;
+    background: #51cf66;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-block;
+    text-decoration: none;
+  }
+
+  .add-branch-btn:hover {
+    background: #40c057;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(81, 207, 102, 0.3);
+  }
+
+  .branch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .branch-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .branch-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    border-color: #0066cc;
+  }
+
+  .branch-card-header {
+    margin-bottom: 16px;
+  }
+
+  .branch-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 6px;
+  }
+
+  .branch-code {
+    display: inline-block;
+    background: #f0f0f0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: monospace;
+    color: #666;
+    font-weight: 600;
+  }
+
+  .branch-details {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .branch-detail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+
+  .branch-detail-icon {
+    color: #999;
+    width: 16px;
+    text-align: center;
+  }
+
+  .branch-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .branch-stat {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .branch-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0066cc;
+  }
+
+  .branch-stat-label {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .branch-status {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .branch-status-active {
+    background: #e6f9ed;
+    color: #1a7f3a;
+  }
+
+  .branch-status-inactive {
+    background: #f0f0f0;
+    color: #666;
+  }
+
+  .branch-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .action-btn {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    color: #333;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .action-btn:hover {
+    border-color: #0066cc;
+    color: #0066cc;
+    background: #f0f7ff;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+  }
+
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  .modal-header {
+    border-bottom: 1px solid #e0e0e0;
+    background: #f8f9fa;
+  }
+
+  .modal-title {
+    font-weight: 700;
+    color: #333;
+  }
+
+  .form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+  }
+
+  .form-control,
+  .form-select {
+    padding: 10px 12px;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #0066cc;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  }
+
+  .form-check {
+    padding-left: 0;
+  }
+
+  .form-check-input {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    accent-color: #0066cc;
+  }
+
+  @media (max-width: 768px) {
+    .branch-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .header-actions {
+      flex-direction: column;
+    }
+
+    .add-branch-btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
+
+<div class="container-fluid branch-container">
+  <div class="header-section">
+    <div class="header-title">Branches</div>
+    <div class="header-subtitle">Manage your service centers and branches</div>
+    <div class="header-actions">
+      <button type="button" class="add-branch-btn" data-bs-toggle="modal" data-bs-target="#addBranchModal">
+        <i class="fa fa-plus" style="margin-right: 6px;"></i>Add Branch
+      </button>
     </div>
+  </div>
+
+  {% if branches %}
+    <div class="branch-grid">
+      {% for branch in branches %}
+        <div class="branch-card">
+          <div class="branch-card-header">
+            <div class="branch-name">{{ branch.name }}</div>
+            <span class="branch-code">{{ branch.code }}</span>
+          </div>
+
+          <div class="branch-details">
+            {% if branch.region %}
+              <div class="branch-detail">
+                <i class="fa fa-map-marker branch-detail-icon"></i>
+                <span>{{ branch.region }}</span>
+              </div>
+            {% endif %}
+
+            <div class="branch-detail">
+              <i class="fa fa-calendar branch-detail-icon"></i>
+              <span>Created: {{ branch.created_at|date:"M d, Y" }}</span>
+            </div>
+          </div>
+
+          <div class="branch-stats">
+            <div class="branch-stat">
+              <div class="branch-stat-value">{{ branch.profiles.count }}</div>
+              <div class="branch-stat-label">Users</div>
+            </div>
+            <div class="branch-stat">
+              <div class="branch-stat-value">{{ branch.customers.count }}</div>
+              <div class="branch-stat-label">Customers</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <span class="branch-status {% if branch.is_active %}branch-status-active{% else %}branch-status-inactive{% endif %}">
+              {% if branch.is_active %}
+                <i class="fa fa-check-circle" style="margin-right: 4px;"></i>Active
+              {% else %}
+                <i class="fa fa-circle-o" style="margin-right: 4px;"></i>Inactive
+              {% endif %}
+            </span>
+          </div>
+
+          <div class="branch-actions">
+            <button type="button" class="action-btn"
+                    onclick="editBranch({{ branch.id }}, '{{ branch.name }}', '{{ branch.code }}', '{{ branch.region|default:'' }}', {{ branch.is_active|yesno:'true,false' }})">
+              <i class="fa fa-edit"></i> Edit
+            </button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <i class="fa fa-building"></i>
+      </div>
+      <h4>No Branches Found</h4>
+      <p>Get started by creating your first branch.</p>
+      <button type="button" class="add-branch-btn" data-bs-toggle="modal" data-bs-target="#addBranchModal">
+        <i class="fa fa-plus" style="margin-right: 6px;"></i>Create Branch
+      </button>
+    </div>
+  {% endif %}
 </div>
 
 <!-- Add Branch Modal -->
 <div class="modal fade" id="addBranchModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Branch</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="addBranchForm">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Name <span class="text-danger">*</span></label>
-                        <input type="text" name="name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Code <span class="text-danger">*</span></label>
-                        <input type="text" name="code" class="form-control text-uppercase" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Region</label>
-                        <input type="text" name="region" class="form-control" placeholder="e.g., Dar es Salaam">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Branch</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Branch</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="addBranchForm">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="addBranchName" class="form-label">Name <span style="color: #d32f2f;">*</span></label>
+            <input type="text" id="addBranchName" name="name" class="form-control" required placeholder="e.g., Dar es Salaam Branch">
+          </div>
+          <div class="mb-3">
+            <label for="addBranchCode" class="form-label">Code <span style="color: #d32f2f;">*</span></label>
+            <input type="text" id="addBranchCode" name="code" class="form-control text-uppercase" required placeholder="e.g., DSM">
+          </div>
+          <div class="mb-3">
+            <label for="addBranchRegion" class="form-label">Region</label>
+            <input type="text" id="addBranchRegion" name="region" class="form-control" placeholder="e.g., East Coast">
+          </div>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Branch</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <!-- Edit Branch Modal -->
 <div class="modal fade" id="editBranchModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Branch</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Branch</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editBranchForm">
+        <input type="hidden" name="branch_id">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editBranchName" class="form-label">Name <span style="color: #d32f2f;">*</span></label>
+            <input type="text" id="editBranchName" name="name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="editBranchCode" class="form-label">Code <span style="color: #d32f2f;">*</span></label>
+            <input type="text" id="editBranchCode" name="code" class="form-control text-uppercase" required>
+          </div>
+          <div class="mb-3">
+            <label for="editBranchRegion" class="form-label">Region</label>
+            <input type="text" id="editBranchRegion" name="region" class="form-control">
+          </div>
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="editBranchIsActive" name="is_active">
+              <label class="form-check-label" for="editBranchIsActive">Active</label>
             </div>
-            <form id="editBranchForm">
-                <input type="hidden" name="branch_id">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Name <span class="text-danger">*</span></label>
-                        <input type="text" name="name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Code <span class="text-danger">*</span></label>
-                        <input type="text" name="code" class="form-control text-uppercase" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Region</label>
-                        <input type="text" name="region" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_active" id="editBranchIsActive">
-                            <label class="form-check-label" for="editBranchIsActive">Active</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Branch</button>
-                </div>
-            </form>
+          </div>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Branch</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <script>
 function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
     }
-    return cookieValue;
+  }
+  return cookieValue;
 }
 
 // Add branch
 const addForm = document.getElementById('addBranchForm');
 if (addForm) {
-    addForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        const data = {
-            name: formData.get('name'),
-            code: formData.get('code'),
-            region: formData.get('region')
-        };
-        fetch('/api/branches/create/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify(data)
-        }).then(r => r.json()).then(data => {
-            if (data.success) { location.reload(); }
-            else { alert('Error: ' + (data.error || 'Unknown error')); }
-        }).catch(err => {
-            console.error(err);
-            alert('An error occurred while creating the branch');
-        });
+  addForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = {
+      name: formData.get('name'),
+      code: formData.get('code'),
+      region: formData.get('region')
+    };
+    fetch('/api/branches/create/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify(data)
+    }).then(r => r.json()).then(data => {
+      if (data.success) { location.reload(); }
+      else { alert('Error: ' + (data.error || 'Unknown error')); }
+    }).catch(err => {
+      console.error(err);
+      alert('An error occurred while creating the branch');
     });
+  });
 }
 
 // Prefill edit
 function editBranch(id, name, code, region, isActive) {
-    const form = document.getElementById('editBranchForm');
-    form.querySelector('[name="branch_id"]').value = id;
-    form.querySelector('[name="name"]').value = name;
-    form.querySelector('[name="code"]').value = code;
-    form.querySelector('[name="region"]').value = region;
-    form.querySelector('[name="is_active"]').checked = !!isActive;
-    new bootstrap.Modal(document.getElementById('editBranchModal')).show();
+  const form = document.getElementById('editBranchForm');
+  form.querySelector('[name="branch_id"]').value = id;
+  form.querySelector('[name="name"]').value = name;
+  form.querySelector('[name="code"]').value = code;
+  form.querySelector('[name="region"]').value = region;
+  form.querySelector('[name="is_active"]').checked = !!isActive;
+  new bootstrap.Modal(document.getElementById('editBranchModal')).show();
 }
 
 // Update branch
 const editForm = document.getElementById('editBranchForm');
 if (editForm) {
-    editForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        const branchId = formData.get('branch_id');
-        const data = {
-            name: formData.get('name'),
-            code: formData.get('code'),
-            region: formData.get('region'),
-            is_active: formData.get('is_active') === 'on'
-        };
-        fetch(`/api/branches/${branchId}/update/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify(data)
-        }).then(r => r.json()).then(data => {
-            if (data.success) { location.reload(); }
-            else { alert('Error: ' + (data.error || 'Unknown error')); }
-        }).catch(err => {
-            console.error(err);
-            alert('An error occurred while updating the branch');
-        });
+  editForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const branchId = formData.get('branch_id');
+    const data = {
+      name: formData.get('name'),
+      code: formData.get('code'),
+      region: formData.get('region'),
+      is_active: formData.get('is_active') === 'on'
+    };
+    fetch(`/api/branches/${branchId}/update/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify(data)
+    }).then(r => r.json()).then(data => {
+      if (data.success) { location.reload(); }
+      else { alert('Error: ' + (data.error || 'Unknown error')); }
+    }).catch(err => {
+      console.error(err);
+      alert('An error occurred while updating the branch');
     });
+  });
 }
 </script>
 {% endblock %}

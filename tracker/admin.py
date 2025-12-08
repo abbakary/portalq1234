@@ -1,5 +1,39 @@
 from django.contrib import admin
-from .models import Customer, Vehicle, Order, InventoryItem, Branch, ServiceType, ServiceAddon, LabourCode, DelayReasonCategory, DelayReason, Salesperson, Invoice, InvoiceLineItem
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
+from .models import Customer, Vehicle, Order, InventoryItem, Branch, ServiceType, ServiceAddon, LabourCode, DelayReasonCategory, DelayReason, Salesperson, Invoice, InvoiceLineItem, Profile
+
+class ProfileInline(admin.StackedInline):
+    model = Profile
+    fields = ('branch', 'photo')
+    extra = 0
+
+class CustomUserAdmin(BaseUserAdmin):
+    inlines = (ProfileInline,)
+    list_display = ('username', 'first_name', 'last_name', 'email', 'is_staff', 'is_superuser', 'get_branch', 'is_active')
+    list_filter = ('is_staff', 'is_superuser', 'is_active', 'profile__branch')
+    search_fields = ('username', 'first_name', 'last_name', 'email')
+
+    def get_branch(self, obj):
+        try:
+            return obj.profile.branch if obj.profile.branch else '—'
+        except Profile.DoesNotExist:
+            return '—'
+    get_branch.short_description = 'Branch'
+
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)
+
+@admin.register(Branch)
+class BranchAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'region', 'is_active', 'user_count')
+    list_filter = ('is_active', 'region')
+    search_fields = ('name', 'code', 'region')
+    readonly_fields = ('created_at',)
+
+    def user_count(self, obj):
+        return obj.profiles.count()
+    user_count.short_description = 'Users'
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):

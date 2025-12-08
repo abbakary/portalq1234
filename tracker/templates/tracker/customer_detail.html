@@ -1028,7 +1028,7 @@
               const choice = confirm('An order for plate ' + plate + ' (Order #' + data.order_number + ') is already started.\n\nClick OK to continue with the existing order, or Cancel to start a new order with this plate.');
               if (choice) {
                 // Continue with existing order
-                window.location.href = '/tracker/orders/started/' + data.order_id + '/';
+                window.location.href = '/tracker/orders/started/';
               } else {
                 // Start new order for the same plate
                 const newPayload = {

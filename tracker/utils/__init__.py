@@ -135,8 +135,10 @@ def get_user_branch(user):
 
 
 def scope_queryset(qs, user, request=None):
-    """Scope a queryset to the user's branch unless superuser.
-    If admin passes ?branch=<id>, use that branch.
+    """Scope a queryset to the user's branch if they have one assigned.
+    Superusers with an assigned branch are restricted to that branch.
+    Superusers without a branch assignment can see all branches.
+    If admin passes ?branch=<id>, use that branch (only if allowed).
     Applies only if model has a 'branch' field.
     """
     try:
@@ -144,7 +146,15 @@ def scope_queryset(qs, user, request=None):
         branch_field = next((f for f in model._meta.fields if f.name == 'branch'), None)
         if not branch_field:
             return qs
-        # Superusers: allow optional branch filter via querystring
+
+        # Get the user's assigned branch
+        user_branch = get_user_branch(user)
+
+        # If user has an assigned branch, restrict to it (applies to all users including superusers)
+        if user_branch:
+            return qs.filter(branch=user_branch)
+
+        # Superusers without assigned branch: allow optional branch filter via querystring
         if getattr(user, 'is_superuser', False):
             if request:
                 b_id = request.GET.get('branch')
@@ -161,10 +171,8 @@ def scope_queryset(qs, user, request=None):
                     except Exception:
                         pass
             return qs
-        # Staff/regular users: restrict to their assigned branch
-        b = get_user_branch(user)
-        if b:
-            return qs.filter(branch=b)
+
+        # Regular staff/users without assigned branch: no access
         return qs.none()
     except Exception:
         return qs

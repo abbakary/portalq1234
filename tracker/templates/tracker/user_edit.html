@@ -1,1 +1,475 @@
-{% extends 'tracker/base.html' %} {% load date_filters %} {% block title %}Edit User{% endblock %} {% block content %} <div class="container-fluid"><div class="page-title"><div class="row"><div class="col-6"><h4>Edit User</h4></div><div class="col-6"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'tracker:users_list' %}">Users</a></li><li class="breadcrumb-item active">Edit</li></ol></div></div></div></div> <div class="container-fluid"><div class="card"><div class="card-body"><form method="post">{% csrf_token %} <div class="row g-3">{% for field in form %}<div class="col-md-6"><label class="form-label">{{ field.label }}</label>{{ field }}{% for e in field.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>{% endfor %}</div> <div class="mt-3 d-flex gap-2"><button class="btn btn-primary" type="submit">Save</button><a class="btn btn-outline-secondary" href="{% url 'tracker:users_list' %}">Cancel</a></div> </form></div></div></div> {% endblock %} 
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}Edit User{% endblock %}
+
+{% block content %}
+<style>
+  .edit-user-container {
+    padding: 20px 0;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .edit-user-header {
+    margin-bottom: 30px;
+  }
+
+  .edit-user-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .edit-user-subtitle {
+    font-size: 14px;
+    color: #666;
+  }
+
+  .user-meta {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .user-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #666;
+  }
+
+  .user-meta-icon {
+    color: #999;
+  }
+
+  .form-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .form-section {
+    margin-bottom: 24px;
+  }
+
+  .form-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .form-control,
+  .form-select {
+    padding: 10px 12px;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    width: 100%;
+    background: white;
+    color: #333;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #0066cc;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    background: white;
+  }
+
+  .form-control:read-only {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+  }
+
+  .form-control::placeholder {
+    color: #999;
+  }
+
+  .form-text {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .form-check-input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #0066cc;
+  }
+
+  .form-check-label {
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .password-hint {
+    background: #f8f9fa;
+    border-left: 3px solid #0066cc;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #666;
+    margin-top: 8px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-row-full {
+    grid-column: 1 / -1;
+  }
+
+  .error-list {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0 0 0;
+  }
+
+  .error-item {
+    color: #d32f2f;
+    font-size: 13px;
+    margin: 4px 0;
+  }
+
+  .form-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  .btn-save {
+    padding: 12px 32px;
+    background: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .btn-save:hover {
+    background: #0052a3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+  }
+
+  .btn-save:active {
+    transform: translateY(0);
+  }
+
+  .btn-cancel {
+    padding: 12px 32px;
+    background: white;
+    color: #333;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s ease;
+  }
+
+  .btn-cancel:hover {
+    background: #f5f5f5;
+    border-color: #999;
+  }
+
+  .info-box {
+    background: #f0f7ff;
+    border-left: 3px solid #0066cc;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #0052a3;
+    margin-bottom: 20px;
+  }
+
+  .info-box-icon {
+    margin-right: 6px;
+  }
+
+  @media (max-width: 768px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .form-card {
+      padding: 20px;
+    }
+
+    .form-buttons {
+      flex-direction: column;
+    }
+
+    .btn-save,
+    .btn-cancel {
+      width: 100%;
+    }
+
+    .user-meta {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
+</style>
+
+<div class="container-fluid edit-user-container">
+  <div class="edit-user-header">
+    <div class="edit-user-title">Edit User</div>
+    <div class="edit-user-subtitle">Update user information, roles, and branch assignment</div>
+    <div class="user-meta">
+      <div class="user-meta-item">
+        <i class="fa fa-user user-meta-icon"></i>
+        <strong>{{ user_obj.username }}</strong>
+      </div>
+      <div class="user-meta-item">
+        <i class="fa fa-calendar user-meta-icon"></i>
+        Joined: {{ user_obj.date_joined|date:'M d, Y' }}
+      </div>
+      {% if user_obj.last_login %}
+        <div class="user-meta-item">
+          <i class="fa fa-sign-in user-meta-icon"></i>
+          Last login: {{ user_obj.last_login|date:'M d, Y H:i' }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="form-card">
+    {% if form.non_field_errors %}
+      <div class="info-box" style="background: #ffe6e6; border-left-color: #d32f2f; color: #d32f2f;">
+        <i class="fa fa-exclamation-circle info-box-icon"></i>
+        {{ form.non_field_errors.0 }}
+      </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <!-- Basic Information Section -->
+      <div class="form-section">
+        <div class="form-section-title">Basic Information</div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ form.username.id_for_label }}" class="form-label">
+              {{ form.username.label }}
+            </label>
+            {{ form.username }}
+            {% if form.username.errors %}
+              <ul class="error-list">
+                {% for error in form.username.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <div class="form-text">Username cannot be changed</div>
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.email.id_for_label }}" class="form-label">
+              {{ form.email.label }}
+            </label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <ul class="error-list">
+                {% for error in form.email.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+              {{ form.first_name.label }}
+            </label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+              <ul class="error-list">
+                {% for error in form.first_name.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+              {{ form.last_name.label }}
+            </label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+              <ul class="error-list">
+                {% for error in form.last_name.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Password Section -->
+      <div class="form-section">
+        <div class="form-section-title">Change Password (Optional)</div>
+        
+        <div class="info-box">
+          <i class="fa fa-info-circle info-box-icon"></i>
+          Leave blank to keep the current password
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ form.new_password.id_for_label }}" class="form-label">
+              {{ form.new_password.label }}
+            </label>
+            {{ form.new_password }}
+            {% if form.new_password.errors %}
+              <ul class="error-list">
+                {% for error in form.new_password.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <div class="password-hint">
+              <i class="fa fa-info-circle" style="margin-right: 6px;"></i>
+              Use a strong password with mix of letters, numbers, and symbols
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.confirm_password.id_for_label }}" class="form-label">
+              {{ form.confirm_password.label }}
+            </label>
+            {{ form.confirm_password }}
+            {% if form.confirm_password.errors %}
+              <ul class="error-list">
+                {% for error in form.confirm_password.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Branch & Role Section -->
+      <div class="form-section">
+        <div class="form-section-title">Assignment & Roles</div>
+        
+        <div class="form-group">
+          <label for="{{ form.branch.id_for_label }}" class="form-label">
+            {{ form.branch.label }}
+            <span style="color: #ff9500;">*</span>
+          </label>
+          {{ form.branch }}
+          {% if form.branch.errors %}
+            <ul class="error-list">
+              {% for error in form.branch.errors %}
+                <li class="error-item">{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <div class="form-text">Assign the user to a specific branch</div>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            {{ form.group_manager }}
+            <label for="{{ form.group_manager.id_for_label }}" class="form-check-label">
+              {{ form.group_manager.label }}
+            </label>
+          </div>
+          <div class="form-text">Grant manager role with additional permissions</div>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            {{ form.is_staff }}
+            <label for="{{ form.is_staff.id_for_label }}" class="form-check-label">
+              {{ form.is_staff.label }}
+            </label>
+          </div>
+          <div class="form-text">Staff members can access the admin interface</div>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            {{ form.is_superuser }}
+            <label for="{{ form.is_superuser.id_for_label }}" class="form-check-label">
+              {{ form.is_superuser.label }}
+            </label>
+          </div>
+          <div class="form-text" style="color: #d32f2f;">
+            <i class="fa fa-warning" style="margin-right: 4px;"></i>
+            Superusers have full system access. Use with caution.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            {{ form.is_active }}
+            <label for="{{ form.is_active.id_for_label }}" class="form-check-label">
+              {{ form.is_active.label }}
+            </label>
+          </div>
+          <div class="form-text">Inactive users cannot log in</div>
+        </div>
+      </div>
+
+      <!-- Form Buttons -->
+      <div class="form-buttons">
+        <button type="submit" class="btn-save">
+          <i class="fa fa-save" style="margin-right: 8px;"></i>Save Changes
+        </button>
+        <a href="{% url 'tracker:users_list' %}" class="btn-cancel">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

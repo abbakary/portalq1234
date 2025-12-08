@@ -1,1 +1,406 @@
-{% extends 'tracker/base.html' %} {% load date_filters %} {% block title %}Add User{% endblock %} {% block content %} <div class="container-fluid"><div class="page-title"><div class="row"><div class="col-6"><h4>Add User</h4></div><div class="col-6"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'tracker:users_list' %}">Users</a></li><li class="breadcrumb-item active">Add</li></ol></div></div></div></div> <div class="container-fluid"><div class="card"><div class="card-body"><form method="post">{% csrf_token %} <div class="row g-3">{% for field in form %}<div class="col-md-6"><label class="form-label">{{ field.label }}</label>{{ field }}{% for e in field.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>{% endfor %}</div> <div class="mt-3 d-flex gap-2"><button class="btn btn-primary" type="submit">Create</button><a class="btn btn-outline-secondary" href="{% url 'tracker:users_list' %}">Cancel</a></div> </form></div></div></div> {% endblock %} 
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+<style>
+  .create-user-container {
+    padding: 20px 0;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .create-user-header {
+    margin-bottom: 30px;
+  }
+
+  .create-user-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .create-user-subtitle {
+    font-size: 14px;
+    color: #666;
+  }
+
+  .form-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .form-section {
+    margin-bottom: 24px;
+  }
+
+  .form-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .form-control,
+  .form-select {
+    padding: 10px 12px;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    width: 100%;
+    background: white;
+    color: #333;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #0066cc;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    background: white;
+  }
+
+  .form-control::placeholder {
+    color: #999;
+  }
+
+  .form-text {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .form-check-input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #0066cc;
+  }
+
+  .form-check-label {
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .password-hint {
+    background: #f8f9fa;
+    border-left: 3px solid #0066cc;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #666;
+    margin-top: 8px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-row-full {
+    grid-column: 1 / -1;
+  }
+
+  .error-list {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0 0 0;
+  }
+
+  .error-item {
+    color: #d32f2f;
+    font-size: 13px;
+    margin: 4px 0;
+  }
+
+  .form-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  .btn-create {
+    padding: 12px 32px;
+    background: #51cf66;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .btn-create:hover {
+    background: #40c057;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(81, 207, 102, 0.3);
+  }
+
+  .btn-create:active {
+    transform: translateY(0);
+  }
+
+  .btn-cancel {
+    padding: 12px 32px;
+    background: white;
+    color: #333;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s ease;
+  }
+
+  .btn-cancel:hover {
+    background: #f5f5f5;
+    border-color: #999;
+  }
+
+  @media (max-width: 768px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .form-card {
+      padding: 20px;
+    }
+
+    .form-buttons {
+      flex-direction: column;
+    }
+
+    .btn-create,
+    .btn-cancel {
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="container-fluid create-user-container">
+  <div class="create-user-header">
+    <div class="create-user-title">Create New User</div>
+    <div class="create-user-subtitle">Add a new user to the system with assigned branch and role</div>
+  </div>
+
+  <div class="form-card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <!-- Basic Information Section -->
+      <div class="form-section">
+        <div class="form-section-title">Basic Information</div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ form.username.id_for_label }}" class="form-label">
+              {{ form.username.label }}
+              <span style="color: #d32f2f;">*</span>
+            </label>
+            {{ form.username }}
+            {% if form.username.errors %}
+              <ul class="error-list">
+                {% for error in form.username.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <div class="form-text">Username for login</div>
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.email.id_for_label }}" class="form-label">
+              {{ form.email.label }}
+            </label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <ul class="error-list">
+                {% for error in form.email.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+              {{ form.first_name.label }}
+            </label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+              <ul class="error-list">
+                {% for error in form.first_name.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+              {{ form.last_name.label }}
+            </label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+              <ul class="error-list">
+                {% for error in form.last_name.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Section -->
+      <div class="form-section">
+        <div class="form-section-title">Security</div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ form.password1.id_for_label }}" class="form-label">
+              {{ form.password1.label }}
+              <span style="color: #d32f2f;">*</span>
+            </label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+              <ul class="error-list">
+                {% for error in form.password1.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <div class="password-hint">
+              <i class="fa fa-info-circle" style="margin-right: 6px;"></i>
+              Use a strong password with mix of letters, numbers, and symbols
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.password2.id_for_label }}" class="form-label">
+              {{ form.password2.label }}
+              <span style="color: #d32f2f;">*</span>
+            </label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+              <ul class="error-list">
+                {% for error in form.password2.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Branch & Role Section -->
+      <div class="form-section">
+        <div class="form-section-title">Assignment & Roles</div>
+        
+        <div class="form-group">
+          <label for="{{ form.branch.id_for_label }}" class="form-label">
+            {{ form.branch.label }}
+            <span style="color: #ff9500;">*</span>
+          </label>
+          {{ form.branch }}
+          {% if form.branch.errors %}
+            <ul class="error-list">
+              {% for error in form.branch.errors %}
+                <li class="error-item">{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <div class="form-text">Assign the user to a specific branch</div>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            {{ form.group_manager }}
+            <label for="{{ form.group_manager.id_for_label }}" class="form-check-label">
+              {{ form.group_manager.label }}
+            </label>
+          </div>
+          <div class="form-text">Grant manager role with additional permissions</div>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            {{ form.is_staff }}
+            <label for="{{ form.is_staff.id_for_label }}" class="form-check-label">
+              {{ form.is_staff.label }}
+            </label>
+          </div>
+          <div class="form-text">Staff members can access the admin interface</div>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            {{ form.is_superuser }}
+            <label for="{{ form.is_superuser.id_for_label }}" class="form-check-label">
+              {{ form.is_superuser.label }}
+            </label>
+          </div>
+          <div class="form-text" style="color: #d32f2f;">
+            <i class="fa fa-warning" style="margin-right: 4px;"></i>
+            Superusers have full system access. Use with caution.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            {{ form.is_active }}
+            <label for="{{ form.is_active.id_for_label }}" class="form-check-label">
+              {{ form.is_active.label }}
+            </label>
+          </div>
+          <div class="form-text">Inactive users cannot log in</div>
+        </div>
+      </div>
+
+      <!-- Form Buttons -->
+      <div class="form-buttons">
+        <button type="submit" class="btn-create">
+          <i class="fa fa-plus" style="margin-right: 8px;"></i>Create User
+        </button>
+        <a href="{% url 'tracker:users_list' %}" class="btn-cancel">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
