@@ -1001,6 +1001,12 @@ class AdminUserForm(forms.ModelForm):
         label="Assigned Branch",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    user_role = forms.ChoiceField(
+        required=False,
+        label="User Role",
+        choices=Profile.ROLE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
 
     class Meta:
         model = User
@@ -1015,19 +1021,37 @@ class AdminUserForm(forms.ModelForm):
             'is_superuser': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, editor=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.editor = editor
+
         try:
             mgr = Group.objects.get(name="manager")
             self.fields['group_manager'].initial = self.instance and self.instance.pk and self.instance.groups.filter(id=mgr.id).exists()
         except Group.DoesNotExist:
             pass
-        # Prefill branch from profile if exists
+        # Prefill branch and role from profile if exists
         try:
             if self.instance and self.instance.pk and hasattr(self.instance, 'profile'):
                 self.fields['branch'].initial = getattr(self.instance.profile, 'branch', None)
+                self.fields['user_role'].initial = getattr(self.instance.profile, 'role', 'staff')
         except Exception:
             pass
+
+        # Restrict branch choices based on editor's permissions
+        if editor and not editor.is_superuser:
+            editor_branch = getattr(editor, 'profile', None) and editor.profile.branch
+            if editor_branch and editor_branch.is_main_branch():
+                # Main branch user can assign to their branch and sub-branches
+                branch_ids = [editor_branch.id]
+                branch_ids.extend(editor_branch.sub_branches.values_list('id', flat=True))
+                self.fields['branch'].queryset = Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name')
+            elif editor_branch:
+                # Sub-branch user can only assign to their own branch
+                self.fields['branch'].queryset = Branch.objects.filter(id=editor_branch.id, is_active=True)
+            else:
+                # No branch assigned, show no options
+                self.fields['branch'].queryset = Branch.objects.none()
 
     def clean(self):
         cleaned = super().clean()
