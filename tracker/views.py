@@ -5174,19 +5174,37 @@ def brand_list(request: HttpRequest):
 @login_required
 @is_manager
 def branches_list(request: HttpRequest):
-    """List all branches with management options"""
+    """List all branches with management options and hierarchy"""
     user_branch = get_user_branch(request.user)
 
     if request.user.is_superuser:
-        # Superuser sees all main branches and can manage everything
-        branches = Branch.objects.filter(parent__isnull=True).order_by('name').prefetch_related('sub_branches')
+        # Superuser sees all main branches with their sub-branches
+        main_branches = Branch.objects.filter(parent__isnull=True).order_by('name').prefetch_related('sub_branches')
+        branches = main_branches
+        user_can_create_branches = True
+        show_all_branches = True
     elif user_branch:
-        # Non-superuser staff sees only their assigned branch and its sub-branches
-        branches = [user_branch]
+        if user_branch.is_main_branch():
+            # Main branch user sees their main branch and all sub-branches
+            branches = [user_branch]
+            user_can_create_branches = True
+            show_all_branches = False
+        else:
+            # Sub-branch user sees only their own branch
+            branches = [user_branch]
+            user_can_create_branches = False
+            show_all_branches = False
     else:
         branches = []
+        user_can_create_branches = False
+        show_all_branches = False
 
-    return render(request, 'tracker/branch_list.html', {'branches': branches, 'user_branch': user_branch})
+    return render(request, 'tracker/branch_list.html', {
+        'branches': branches,
+        'user_branch': user_branch,
+        'user_can_create_branches': user_can_create_branches,
+        'show_all_branches': show_all_branches,
+    })
 
 @login_required
 @is_manager
