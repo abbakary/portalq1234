@@ -326,6 +326,14 @@
                   <span class="role-badge role-staff">Staff</span>
                 {% endif %}
 
+                {% with u.profile.role as user_role %}
+                  {% if user_role %}
+                    <span class="role-badge" style="background: #6c63ff; color: white;">
+                      {{ user_role|upper|replace:"_":" " }}
+                    </span>
+                  {% endif %}
+                {% endwith %}
+
                 {% if u.groups.all %}
                   {% for group in u.groups.all %}
                     <span class="role-badge role-manager">{{ group.name }}</span>
