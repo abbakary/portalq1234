@@ -350,8 +350,13 @@
               {% with u.profile.branch as branch %}
                 {% if branch %}
                   <div class="user-branch">
-                    <i class="fa fa-map-marker user-branch-icon"></i>
-                    {{ branch.name }}
+                    {% if branch.parent %}
+                      <i class="fa fa-arrow-right user-branch-icon" style="color: #0066cc;"></i>
+                      <strong>{{ branch.parent.name }}</strong> → {{ branch.name }}
+                    {% else %}
+                      <i class="fa fa-map-marker user-branch-icon"></i>
+                      {{ branch.name }}
+                    {% endif %}
                     {% if branch.region %}
                       <span style="color: #999;">— {{ branch.region }}</span>
                     {% endif %}
