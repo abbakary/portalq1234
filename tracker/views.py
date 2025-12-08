@@ -5192,15 +5192,15 @@ def branches_list(request: HttpRequest):
     """List all branches with management options and hierarchy"""
     user_branch = get_user_branch(request.user)
 
-    if request.user.is_superuser:
-        # Superuser sees all main branches with their sub-branches
+    if is_system_superuser(request.user):
+        # System superuser (no branch assigned) sees all main branches
         main_branches = Branch.objects.filter(parent__isnull=True).order_by('name').prefetch_related('sub_branches')
         branches = main_branches
         user_can_create_branches = True
         show_all_branches = True
     elif user_branch:
         if user_branch.is_main_branch():
-            # Main branch user sees their main branch and all sub-branches
+            # Branch superuser/admin sees their main branch and all sub-branches
             branches = [user_branch]
             user_can_create_branches = True
             show_all_branches = False
