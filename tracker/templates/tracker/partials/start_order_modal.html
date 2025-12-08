@@ -133,7 +133,7 @@ function submitStartOrder(event) {
       const modal = bootstrap.Modal.getInstance(document.getElementById('startOrderModal'));
       modal.hide();
       setTimeout(() => {
-        window.location.href = `/orders/started/${data.order_id}/`;
+        window.location.href = `/orders/started/`;
       }, 300);
       return;
     }
