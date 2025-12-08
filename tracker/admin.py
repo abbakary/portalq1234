@@ -200,9 +200,14 @@ class LabourCodeAdmin(admin.ModelAdmin):
 
 @admin.register(Branch)
 class BranchAdmin(admin.ModelAdmin):
-    list_display = ("name", "code", "region", "is_active", "created_at")
+    list_display = ("name", "code", "region", "is_active", "created_at", "user_count")
     search_fields = ("name", "code", "region")
     list_filter = ("region", "is_active")
+    readonly_fields = ("created_at",)
+
+    def user_count(self, obj):
+        return obj.profiles.count()
+    user_count.short_description = 'Users'
 
     def get_search_results(self, request, queryset, search_term):
         """Prioritize exact (case-insensitive) name matches for admin autocomplete.
