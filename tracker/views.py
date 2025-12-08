@@ -5580,19 +5580,45 @@ def users_list(request: HttpRequest):
     if q:
         qs = qs.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q))
 
-    # If user has assigned branch, restrict to that branch regardless of superuser status
-    if user_branch:
-        qs = qs.filter(profile__branch=user_branch)
-    # Superuser without assigned branch can filter by branch parameter
-    elif request.user.is_superuser and branch_param:
-        if branch_param.isdigit():
-            qs = qs.filter(profile__branch_id=int(branch_param))
-        else:
-            b = Branch.objects.filter(name__iexact=branch_param).first()
-            if b:
-                qs = qs.filter(profile__branch_id=b.id)
+    # Build branch filter based on user role and branch assignment
+    if request.user.is_superuser:
+        # Superuser can filter by branch parameter or see all
+        if branch_param:
+            if branch_param.isdigit():
+                selected_branch = Branch.objects.filter(pk=int(branch_param)).first()
+            else:
+                selected_branch = Branch.objects.filter(name__iexact=branch_param).first()
 
-    branches = list(Branch.objects.filter(is_active=True).order_by('name').values_list('name', flat=True))
+            if selected_branch:
+                # Include users from selected branch and all its sub-branches
+                branch_ids = [selected_branch.id]
+                branch_ids.extend(selected_branch.sub_branches.values_list('id', flat=True))
+                qs = qs.filter(profile__branch_id__in=branch_ids)
+    elif user_branch:
+        # Non-superuser staff with assigned branch sees their branch and sub-branches
+        if user_branch.parent is None:
+            # User is from main branch, include users from main and all subs
+            branch_ids = [user_branch.id]
+            branch_ids.extend(user_branch.sub_branches.values_list('id', flat=True))
+            qs = qs.filter(profile__branch_id__in=branch_ids)
+        else:
+            # User is from sub-branch, only see their own branch
+            qs = qs.filter(profile__branch=user_branch)
+    else:
+        # No branch assigned, show no users
+        qs = qs.none()
+
+    # Get available branches for filter dropdown
+    if request.user.is_superuser:
+        branches = list(Branch.objects.filter(parent__isnull=True, is_active=True).order_by('name').values_list('name', flat=True))
+    elif user_branch and user_branch.parent is None:
+        # Main branch user can filter by their main branch or sub-branches
+        branch_names = [user_branch.name]
+        branch_names.extend(user_branch.sub_branches.values_list('name', flat=True).order_by('name'))
+        branches = branch_names
+    else:
+        branches = [user_branch.name] if user_branch else []
+
     return render(request, 'tracker/users_list.html', { 'users': qs[:100], 'q': q, 'branches': branches, 'selected_branch': branch_param, 'user_branch': user_branch })
 
 @login_required
