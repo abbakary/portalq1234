@@ -47,12 +47,19 @@ def delay_analytics_dashboard(request):
     # Get order type filter (service, sales, inquiry, labour, unspecified, mixed)
     selected_order_type = request.GET.get('order_type', '')
     
-    # Base queryset
-    orders_qs = Order.objects.filter(
-        branch=user_branch,
-        delay_reason__isnull=False,
-        delay_reason_reported_at__isnull=False
-    )
+    # FIX: Query orders with delay_reason directly from database
+    if user_branch:
+        orders_qs = Order.objects.filter(
+            branch=user_branch,
+            delay_reason__isnull=False,
+            delay_reason_reported_at__isnull=False
+        )
+    else:
+        # If no branch, show all orders with delay reasons
+        orders_qs = Order.objects.filter(
+            delay_reason__isnull=False,
+            delay_reason_reported_at__isnull=False
+        )
     
     if start_date:
         orders_qs = orders_qs.filter(delay_reason_reported_at__gte=start_date)
@@ -102,41 +109,67 @@ def delay_analytics_dashboard(request):
 @login_required
 @require_http_methods(["GET"])
 def api_delay_analytics_summary(request):
-    """API endpoint for delay analytics summary statistics"""
+    """API endpoint for delay analytics summary statistics - Query directly from DelayReason table"""
     user_branch = get_user_branch(request.user)
 
     time_period = request.GET.get('period', '30days')
     selected_category = request.GET.get('category', '')
     selected_user = request.GET.get('user', '')
     selected_order_type = request.GET.get('order_type', '')
-
     start_date = _get_start_date_from_period(time_period)
 
-    # Base queryset - Include ALL orders with submitted delay reasons (not just completed)
-    orders_qs = Order.objects.filter(
-        branch=user_branch,
+    # FIX: Query directly from DelayReason table using reverse relationship
+    delay_reasons_qs = DelayReason.objects.filter(
+        orders__isnull=False,
+        orders__delay_reason_reported_at__isnull=False
+    )
+    
+    # Apply branch filter through orders
+    if user_branch:
+        delay_reasons_qs = delay_reasons_qs.filter(orders__branch=user_branch)
+    
+    # Apply date filter
+    if start_date:
+        delay_reasons_qs = delay_reasons_qs.filter(orders__delay_reason_reported_at__gte=start_date)
+    
+    # Apply category filter
+    if selected_category:
+        delay_reasons_qs = delay_reasons_qs.filter(category__category=selected_category)
+    
+    # Apply user filter
+    if selected_user:
+        delay_reasons_qs = delay_reasons_qs.filter(orders__delay_reason_reported_by__id=selected_user)
+    
+    # Apply order type filter
+    if selected_order_type:
+        delay_reasons_qs = delay_reasons_qs.filter(orders__type=selected_order_type)
+    
+    # Get distinct orders with delay reasons (using distinct to avoid duplicates from joins)
+    orders_with_delays = Order.objects.filter(
         delay_reason__isnull=False,
         delay_reason_reported_at__isnull=False
     )
     
+    if user_branch:
+        orders_with_delays = orders_with_delays.filter(branch=user_branch)
     if start_date:
-        orders_qs = orders_qs.filter(delay_reason_reported_at__gte=start_date)
-    
+        orders_with_delays = orders_with_delays.filter(delay_reason_reported_at__gte=start_date)
     if selected_category:
-        orders_qs = orders_qs.filter(delay_reason__category__category=selected_category)
-    
+        orders_with_delays = orders_with_delays.filter(delay_reason__category__category=selected_category)
     if selected_user:
-        orders_qs = orders_qs.filter(delay_reason_reported_by__id=selected_user)
-    
+        orders_with_delays = orders_with_delays.filter(delay_reason_reported_by__id=selected_user)
     if selected_order_type:
-        orders_qs = orders_qs.filter(type=selected_order_type)
+        orders_with_delays = orders_with_delays.filter(type=selected_order_type)
     
     # Calculate metrics
-    total_delayed = orders_qs.count()
+    total_delayed = orders_with_delays.distinct().count()
+    
     # Get total orders in same period for comparison
-    total_all_orders = Order.objects.filter(
-        branch=user_branch
-    )
+    if user_branch:
+        total_all_orders = Order.objects.filter(branch=user_branch)
+    else:
+        total_all_orders = Order.objects.all()
+    
     if start_date:
         total_all_orders = total_all_orders.filter(created_at__gte=start_date)
     
@@ -144,38 +177,39 @@ def api_delay_analytics_summary(request):
     delay_percentage = (total_delayed / total_all * 100) if total_all > 0 else 0
     
     # Orders with exceeded 2 hours threshold
-    exceeded_2_hours_count = orders_qs.filter(exceeded_9_hours=True).count()
+    exceeded_2_hours_count = orders_with_delays.filter(exceeded_9_hours=True).distinct().count()
     
     # Average time from start to completion for delayed orders
-    delayed_orders_with_times = orders_qs.filter(
+    delayed_orders_with_times = orders_with_delays.filter(
         started_at__isnull=False,
         completed_at__isnull=False
-    )
+    ).distinct()
     
     total_duration = 0
-    for order in delayed_orders_with_times:
-        duration = (order.completed_at - order.started_at).total_seconds() / 3600
-        total_duration += duration
+    count = 0
+    for order in delayed_orders_with_times[:1000]:  # Limit to avoid memory issues
+        if order.completed_at and order.started_at:
+            duration = (order.completed_at - order.started_at).total_seconds() / 3600
+            total_duration += duration
+            count += 1
     
-    avg_hours = total_duration / delayed_orders_with_times.count() if delayed_orders_with_times.exists() else 0
+    avg_hours = total_duration / count if count > 0 else 0
     
-    # Most common delay reasons
-    top_reasons_raw = orders_qs.values(
-        'delay_reason__reason_text',
-        'delay_reason__category__category'
-    ).annotate(
-        count=Count('id'),
-        percentage=Cast(Count('id') * 100.0 / total_delayed, FloatField())
-    ).order_by('-count')[:10]
-
+    # Most common delay reasons - query directly from DelayReason
+    top_reasons_raw = delay_reasons_qs.annotate(
+        order_count=Count('orders', distinct=True)
+    ).filter(order_count__gt=0).order_by('-order_count')[:10]
+    
     top_reasons = []
-    for item in top_reasons_raw:
+    for delay_reason in top_reasons_raw:
+        count_for_reason = orders_with_delays.filter(delay_reason=delay_reason).distinct().count()
+        percentage = (count_for_reason / total_delayed * 100) if total_delayed > 0 else 0
         top_reasons.append({
-            'delay_reason__reason_text': item['delay_reason__reason_text'],
-            'delay_reason__category__category': item['delay_reason__category__category'],
-            'delay_reason__category__get_category_display': _get_category_display(item['delay_reason__category__category']),
-            'count': item['count'],
-            'percentage': item['percentage'],
+            'delay_reason__reason_text': delay_reason.reason_text,
+            'delay_reason__category__category': delay_reason.category.category if delay_reason.category else '',
+            'delay_reason__category__get_category_display': _get_category_display(delay_reason.category.category) if delay_reason.category else 'Unknown',
+            'count': count_for_reason,
+            'percentage': percentage,
         })
 
     return JsonResponse({
@@ -194,39 +228,65 @@ def api_delay_analytics_summary(request):
 @login_required
 @require_http_methods(["GET"])
 def api_delay_reasons_breakdown(request):
-    """API endpoint for delay reasons breakdown by category"""
+    """API endpoint for delay reasons breakdown by category - Query from DelayReason table"""
     user_branch = get_user_branch(request.user)
 
     time_period = request.GET.get('period', '30days')
     start_date = _get_start_date_from_period(time_period)
-
-    # Include all orders with submitted delay reasons
-    orders_qs = Order.objects.filter(
-        branch=user_branch,
-        delay_reason__isnull=False,
-        delay_reason_reported_at__isnull=False
-    )
-
-    if start_date:
-        orders_qs = orders_qs.filter(delay_reason_reported_at__gte=start_date)
+    selected_category = request.GET.get('category', '')
+    selected_user = request.GET.get('user', '')
+    selected_order_type = request.GET.get('order_type', '')
     
-    # Breakdown by category
-    category_breakdown = orders_qs.values(
-        'delay_reason__category__category'
-    ).annotate(
-        count=Count('id')
-    ).order_by('-count')
-
-    total = sum(item['count'] for item in category_breakdown)
-
+    # FIX: Query directly from DelayReasonCategory through DelayReason
+    categories_qs = DelayReasonCategory.objects.filter(
+        reasons__orders__isnull=False,
+        reasons__orders__delay_reason_reported_at__isnull=False
+    )
+    
+    # Apply filters through orders relationship
+    if user_branch:
+        categories_qs = categories_qs.filter(reasons__orders__branch=user_branch)
+    if start_date:
+        categories_qs = categories_qs.filter(reasons__orders__delay_reason_reported_at__gte=start_date)
+    if selected_category:
+        categories_qs = categories_qs.filter(category=selected_category)
+    if selected_user:
+        categories_qs = categories_qs.filter(reasons__orders__delay_reason_reported_by__id=selected_user)
+    if selected_order_type:
+        categories_qs = categories_qs.filter(reasons__orders__type=selected_order_type)
+    
+    # Get counts per category
     data = []
-    for item in category_breakdown:
-        data.append({
-            'category': item['delay_reason__category__category'],
-            'category_name': _get_category_display(item['delay_reason__category__category']),
-            'count': item['count'],
-            'percentage': round(item['count'] / total * 100, 1) if total > 0 else 0,
-        })
+    for category in categories_qs.distinct():
+        # Count orders with this category
+        orders_count = Order.objects.filter(
+            delay_reason__category=category,
+            delay_reason_reported_at__isnull=False
+        )
+        if user_branch:
+            orders_count = orders_count.filter(branch=user_branch)
+        if start_date:
+            orders_count = orders_count.filter(delay_reason_reported_at__gte=start_date)
+        if selected_user:
+            orders_count = orders_count.filter(delay_reason_reported_by__id=selected_user)
+        if selected_order_type:
+            orders_count = orders_count.filter(type=selected_order_type)
+        
+        count = orders_count.distinct().count()
+        if count > 0:
+            data.append({
+                'category': category.category,
+                'category_name': _get_category_display(category.category),
+                'count': count,
+            })
+    
+    # Sort by count descending
+    data.sort(key=lambda x: x['count'], reverse=True)
+    total = sum(item['count'] for item in data)
+    
+    # Calculate percentages
+    for item in data:
+        item['percentage'] = round(item['count'] / total * 100, 1) if total > 0 else 0
     
     return JsonResponse({
         'success': True,
@@ -238,39 +298,49 @@ def api_delay_reasons_breakdown(request):
 @login_required
 @require_http_methods(["GET"])
 def api_delay_trends(request):
-    """API endpoint for delay trends over time"""
+    """API endpoint for delay trends over time - Query from Order table with delay_reason"""
     user_branch = get_user_branch(request.user)
 
     time_period = request.GET.get('period', '30days')
     start_date = _get_start_date_from_period(time_period)
     selected_category = request.GET.get('category', '')
+    selected_user = request.GET.get('user', '')
+    selected_order_type = request.GET.get('order_type', '')
 
-    # Include all orders with submitted delay reasons
+    # FIX: Query orders with delay_reason directly
     orders_qs = Order.objects.filter(
-        branch=user_branch,
         delay_reason__isnull=False,
         delay_reason_reported_at__isnull=False
     )
-
+    
+    if user_branch:
+        orders_qs = orders_qs.filter(branch=user_branch)
+    
     if start_date:
         orders_qs = orders_qs.filter(delay_reason_reported_at__gte=start_date)
     
     if selected_category:
         orders_qs = orders_qs.filter(delay_reason__category__category=selected_category)
     
+    if selected_user:
+        orders_qs = orders_qs.filter(delay_reason_reported_by__id=selected_user)
+    
+    if selected_order_type:
+        orders_qs = orders_qs.filter(type=selected_order_type)
+    
     # Group by date
     daily_delays = orders_qs.annotate(
         date=TruncDate('delay_reason_reported_at')
     ).values('date').annotate(
-        count=Count('id'),
-        exceeded_9h=Count('id', filter=Q(exceeded_9_hours=True))
+        count=Count('id', distinct=True),
+        exceeded_9h=Count('id', filter=Q(exceeded_9_hours=True), distinct=True)
     ).order_by('date')
     
     # Also get total orders per day for context
-    all_orders_daily = Order.objects.filter(
-        branch=user_branch,
-        status='completed'
-    )
+    if user_branch:
+        all_orders_daily = Order.objects.filter(branch=user_branch, status='completed')
+    else:
+        all_orders_daily = Order.objects.filter(status='completed')
     
     if start_date:
         all_orders_daily = all_orders_daily.filter(completed_at__gte=start_date)
@@ -278,7 +348,7 @@ def api_delay_trends(request):
     all_daily = all_orders_daily.annotate(
         date=TruncDate('completed_at')
     ).values('date').annotate(
-        total=Count('id')
+        total=Count('id', distinct=True)
     ).order_by('date')
     
     all_daily_dict = {item['date']: item['total'] for item in all_daily}
@@ -304,26 +374,40 @@ def api_delay_trends(request):
 @login_required
 @require_http_methods(["GET"])
 def api_delay_by_order_type(request):
-    """API endpoint for delay breakdown by order type"""
+    """API endpoint for delay breakdown by order type - Query from Order table"""
     user_branch = get_user_branch(request.user)
 
     time_period = request.GET.get('period', '30days')
     start_date = _get_start_date_from_period(time_period)
+    selected_category = request.GET.get('category', '')
+    selected_user = request.GET.get('user', '')
+    selected_order_type = request.GET.get('order_type', '')
 
-    # Include all orders with submitted delay reasons
+    # FIX: Query orders with delay_reason directly
     orders_qs = Order.objects.filter(
-        branch=user_branch,
         delay_reason__isnull=False,
         delay_reason_reported_at__isnull=False
     )
-
+    
+    if user_branch:
+        orders_qs = orders_qs.filter(branch=user_branch)
+    
     if start_date:
         orders_qs = orders_qs.filter(delay_reason_reported_at__gte=start_date)
     
+    if selected_category:
+        orders_qs = orders_qs.filter(delay_reason__category__category=selected_category)
+    
+    if selected_user:
+        orders_qs = orders_qs.filter(delay_reason_reported_by__id=selected_user)
+    
+    if selected_order_type:
+        orders_qs = orders_qs.filter(type=selected_order_type)
+    
     # Breakdown by order type
     type_breakdown = orders_qs.values('type').annotate(
-        count=Count('id'),
-        percentage=Cast(Count('id') * 100.0 / orders_qs.count(), FloatField())
+        count=Count('id', distinct=True),
+        percentage=Cast(Count('id', distinct=True) * 100.0 / orders_qs.count(), FloatField())
     ).order_by('-count')
     
     data = []
@@ -345,22 +429,36 @@ def api_delay_by_order_type(request):
 @login_required
 @require_http_methods(["GET"])
 def api_delay_by_user(request):
-    """API endpoint for delay breakdown by user/team member"""
+    """API endpoint for delay breakdown by user/team member - Query from Order table"""
     user_branch = get_user_branch(request.user)
 
     time_period = request.GET.get('period', '30days')
     start_date = _get_start_date_from_period(time_period)
+    selected_category = request.GET.get('category', '')
+    selected_user = request.GET.get('user', '')
+    selected_order_type = request.GET.get('order_type', '')
 
-    # Include all orders with submitted delay reasons
+    # FIX: Query orders with delay_reason directly
     orders_qs = Order.objects.filter(
-        branch=user_branch,
         delay_reason__isnull=False,
         delay_reason_reported_at__isnull=False,
         delay_reason_reported_by__isnull=False
     )
-
+    
+    if user_branch:
+        orders_qs = orders_qs.filter(branch=user_branch)
+    
     if start_date:
         orders_qs = orders_qs.filter(delay_reason_reported_at__gte=start_date)
+    
+    if selected_category:
+        orders_qs = orders_qs.filter(delay_reason__category__category=selected_category)
+    
+    if selected_user:
+        orders_qs = orders_qs.filter(delay_reason_reported_by__id=selected_user)
+    
+    if selected_order_type:
+        orders_qs = orders_qs.filter(type=selected_order_type)
     
     # Breakdown by user
     user_breakdown = orders_qs.values(
@@ -369,8 +467,8 @@ def api_delay_by_user(request):
         'delay_reason_reported_by__last_name',
         'delay_reason_reported_by__username'
     ).annotate(
-        count=Count('id'),
-        exceeded_2h_count=Count('id', filter=Q(exceeded_9_hours=True))
+        count=Count('id', distinct=True),
+        exceeded_2h_count=Count('id', filter=Q(exceeded_9_hours=True), distinct=True)
     ).order_by('-count')
     
     data = []
@@ -402,13 +500,15 @@ def api_delay_impact_analysis(request):
     time_period = request.GET.get('period', '30days')
     start_date = _get_start_date_from_period(time_period)
 
-    # Include all orders with submitted delay reasons
+    # FIX: Query orders with delay_reason directly
     orders_qs = Order.objects.filter(
-        branch=user_branch,
         delay_reason__isnull=False,
         delay_reason_reported_at__isnull=False
     )
-
+    
+    if user_branch:
+        orders_qs = orders_qs.filter(branch=user_branch)
+    
     if start_date:
         orders_qs = orders_qs.filter(delay_reason_reported_at__gte=start_date)
     
@@ -429,7 +529,7 @@ def api_delay_impact_analysis(request):
     
     # Get repeat delay customers
     customers_with_delays = orders_qs.values('customer').annotate(
-        delay_count=Count('id')
+        delay_count=Count('id', distinct=True)
     ).filter(delay_count__gte=2).count()
     
     # Get most problematic reasons by impact
@@ -437,7 +537,7 @@ def api_delay_impact_analysis(request):
         'delay_reason__reason_text',
         'delay_reason__category__category'
     ).annotate(
-        count=Count('id'),
+        count=Count('id', distinct=True),
         affected_customers=Count('customer', distinct=True)
     ).order_by('-count')[:5]
 
@@ -472,13 +572,15 @@ def api_delay_recommendations(request):
     time_period = request.GET.get('period', '30days')
     start_date = _get_start_date_from_period(time_period)
 
-    # Include all orders with submitted delay reasons
+    # FIX: Query orders with delay_reason directly
     orders_qs = Order.objects.filter(
-        branch=user_branch,
         delay_reason__isnull=False,
         delay_reason_reported_at__isnull=False
     )
-
+    
+    if user_branch:
+        orders_qs = orders_qs.filter(branch=user_branch)
+    
     if start_date:
         orders_qs = orders_qs.filter(delay_reason_reported_at__gte=start_date)
     
@@ -487,7 +589,7 @@ def api_delay_recommendations(request):
     # Analysis 1: Most common category
     category_counts = orders_qs.values(
         'delay_reason__category__category'
-    ).annotate(count=Count('id')).order_by('-count')
+    ).annotate(count=Count('id', distinct=True)).order_by('-count')
 
     if category_counts.exists():
         top_cat = category_counts[0]
@@ -516,7 +618,7 @@ def api_delay_recommendations(request):
     
     # Analysis 3: Specific problematic reasons
     top_reasons = orders_qs.values('delay_reason__reason_text').annotate(
-        count=Count('id')
+        count=Count('id', distinct=True)
     ).order_by('-count')[:3]
     
     for reason in top_reasons:
@@ -531,7 +633,7 @@ def api_delay_recommendations(request):
     # Analysis 4: Delay rate trend
     daily_rates = orders_qs.annotate(
         date=TruncDate('delay_reason_reported_at')
-    ).values('date').annotate(count=Count('id')).order_by('-date')[:7]
+    ).values('date').annotate(count=Count('id', distinct=True)).order_by('-date')[:7]
     
     if daily_rates.exists():
         recent_avg = sum(item['count'] for item in daily_rates) / len(list(daily_rates))
@@ -557,7 +659,7 @@ def api_delay_recommendations(request):
 @login_required
 @require_http_methods(["GET"])
 def api_all_delay_reasons(request):
-    """API endpoint to fetch all delay reasons from database with their submission counts"""
+    """API endpoint to fetch all delay reasons from database with their submission counts - Query from Order table"""
     user_branch = get_user_branch(request.user)
 
     time_period = request.GET.get('period', '30days')
@@ -567,22 +669,24 @@ def api_all_delay_reasons(request):
 
     start_date = _get_start_date_from_period(time_period)
 
-    # Base queryset - get all orders with submitted delay reasons
+    # FIX: Query orders with delay_reason directly
     orders_qs = Order.objects.filter(
-        branch=user_branch,
         delay_reason__isnull=False,
         delay_reason_reported_at__isnull=False
     )
-
+    
+    if user_branch:
+        orders_qs = orders_qs.filter(branch=user_branch)
+    
     if start_date:
         orders_qs = orders_qs.filter(delay_reason_reported_at__gte=start_date)
-
+    
     if selected_category:
         orders_qs = orders_qs.filter(delay_reason__category__category=selected_category)
-
+    
     if selected_user:
         orders_qs = orders_qs.filter(delay_reason_reported_by__id=selected_user)
-
+    
     if selected_order_type:
         orders_qs = orders_qs.filter(type=selected_order_type)
 
@@ -603,8 +707,8 @@ def api_all_delay_reasons(request):
         'delay_reason__reason_text',
         'delay_reason__category__category'
     ).annotate(
-        count=Count('id'),
-        percentage=Cast(Count('id') * 100.0 / total_delayed, FloatField())
+        count=Count('id', distinct=True),
+        percentage=Cast(Count('id', distinct=True) * 100.0 / total_delayed, FloatField())
     ).order_by('-count')
 
     data = []

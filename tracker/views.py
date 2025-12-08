@@ -957,7 +957,17 @@ def api_customers_summary(request: HttpRequest):
 @login_required
 def api_customers_list(request: HttpRequest):
     """API endpoint to get all customers for dropdown selection (e.g., inquiries)"""
-    qs = scope_queryset(Customer.objects.all().order_by('full_name'), request.user, request)
+    # Try to scope by branch first
+    user_branch = get_user_branch(request.user)
+
+    if user_branch:
+        # If user has a branch, scope to that branch
+        qs = Customer.objects.filter(branch=user_branch).order_by('full_name')
+    else:
+        # If user has no branch assigned, show all customers (common during setup)
+        # Superusers see all, regular users without branch see all as fallback
+        qs = Customer.objects.all().order_by('full_name')
+
     customers = [
         {
             'id': c.id,

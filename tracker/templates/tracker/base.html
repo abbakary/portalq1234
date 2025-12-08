@@ -361,7 +361,8 @@
                                     </a>
                                 </li> -->
 
-                                <!-- Labour Codes -->
+                                <!-- Labour Codes - Only for Superusers -->
+                                {% if user.is_superuser %}
                                 <li class="sidebar-list">
                                     <i class="fa fa-thumb-tack"></i>
                                     <a class="sidebar-link sidebar-title" href="#">
@@ -375,6 +376,7 @@
                                         <li><a href="{% url 'tracker:labour_codes_import' %}">Import / Add</a></li>
                                     </ul>
                                 </li>
+                                {% endif %}
 
                                 <!-- System -->
                                 {% if user.is_superuser %}

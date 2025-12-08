@@ -641,7 +641,10 @@ def api_create_invoice_from_upload(request):
                     )
                     logger.info(f"Created new order {order.id} for customer {customer_obj.id}")
                 except Exception as e:
-                    logger.error(f"Failed to create order for customer {customer_obj.id}: {e}")
+                    # FIX: Log the error but don't try to do database operations here
+                    # The atomic block will handle rollback automatically
+                    logger.error(f"Failed to create order for customer {customer_obj.id}: {e}", exc_info=True)
+                    # Return error response - Django will handle transaction rollback
                     return JsonResponse({
                         'success': False,
                         'message': f'Failed to create order: {str(e)}'

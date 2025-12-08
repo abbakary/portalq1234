@@ -168,20 +168,33 @@ def api_vehicle_tracking_data(request):
             else:
                 inv_vehicle_obj = inv.vehicle
 
-            key = (veh_id, plate_val)
+            # FIX: Use plate number as primary key to group all invoices for same vehicle together
+            # This ensures same vehicle plate is grouped regardless of vehicle_id or date
+            if plate_val:
+                # Normalize plate for consistent grouping
+                normalized_plate = plate_val.upper().replace(' ', '').replace('-', '')
+                key = (normalized_plate, veh_id if veh_id else 0)
+            else:
+                # Fallback to vehicle_id if no plate
+                key = (veh_id or 0, '')
+            
             if key not in buckets:
                 buckets[key] = {
                     'vehicle': inv_vehicle_obj,
                     'customer': inv.customer,
                     'plate': plate_val,
+                    'normalized_plate': normalized_plate,  # FIX: Store normalized plate for later use
                     'invoices': [],
+                    'invoice_ids': set(),  # FIX: Track invoice IDs to prevent duplicates
                     'orders': set(),
                     'total_spent': Decimal('0'),
                 }
             b = buckets[key]
-            # Deduplicate invoices within the bucket by id
-            if not any(getattr(_i, 'id', None) == getattr(inv, 'id', None) for _i in b['invoices']):
+            # FIX: Improved deduplication - check by invoice ID to prevent duplicates
+            inv_id = getattr(inv, 'id', None)
+            if inv_id and inv_id not in b['invoice_ids']:
                 b['invoices'].append(inv)
+                b['invoice_ids'].add(inv_id)
                 b['total_spent'] += inv.total_amount or Decimal('0')
                 if inv.order_id:
                     b['orders'].add(inv.order_id)
@@ -196,7 +209,16 @@ def api_vehicle_tracking_data(request):
         for order in orders_qs:
             v = order.vehicle
             plate = (v.plate_number if v else '')
-            key = (v.id if v else 0, plate)
+            # FIX: Use normalized plate for consistent grouping, matching invoice bucket logic
+            normalized_plate = ''
+            if plate:
+                normalized_plate = plate.upper().replace(' ', '').replace('-', '').strip()
+            
+            if normalized_plate:
+                key = (normalized_plate, v.id if v else 0)
+            else:
+                key = (v.id if v else 0, '')
+            
             if key not in buckets:
                 if search_query:
                     match = False
@@ -210,7 +232,9 @@ def api_vehicle_tracking_data(request):
                     'vehicle': v,
                     'customer': order.customer,
                     'plate': plate,
+                    'normalized_plate': normalized_plate,  # FIX: Initialize invoice_ids set for order buckets too
                     'invoices': [],
+                    'invoice_ids': set(),  # FIX: Initialize invoice_ids set for order buckets too
                     'orders': set([order.id]),
                     'total_spent': Decimal('0'),
                 }
@@ -305,6 +329,28 @@ def api_vehicle_tracking_data(request):
                 inv_by_vehicle = Invoice.objects.filter(vehicle_id=vehicle.id) if vehicle else Invoice.objects.none()
                 if user_branch:
                     inv_by_vehicle = inv_by_vehicle.filter(branch=user_branch)
+                
+                # FIX: Also get all invoices by plate reference to catch all invoices for same vehicle
+                # This ensures returning vehicle status works correctly
+                normalized_plate = b.get('normalized_plate', '')
+                if not normalized_plate and plate_val:
+                    normalized_plate = plate_val.upper().replace(' ', '').replace('-', '').strip()
+                
+                inv_by_plate = []
+                if normalized_plate:
+                    # Get all invoices with this plate in reference (not just date-filtered)
+                    all_invoices_for_plate = Invoice.objects.all()
+                    if user_branch:
+                        all_invoices_for_plate = all_invoices_for_plate.filter(branch=user_branch)
+                    # Filter by plate reference - check all invoices, not just date-filtered
+                    for inv_check in all_invoices_for_plate:
+                        try:
+                            check_plate = _plate_from_reference(inv_check.reference or '')
+                            if check_plate and check_plate.upper().replace(' ', '').replace('-', '') == normalized_plate:
+                                inv_by_plate.append(inv_check)
+                        except Exception:
+                            pass
+                
                 combined_map = {}
                 for inv in inv_qs:
                     combined_map[inv.id] = inv
@@ -312,15 +358,26 @@ def api_vehicle_tracking_data(request):
                     combined_map[inv.id] = inv
                 for inv in inv_by_vehicle:
                     combined_map[inv.id] = inv
+                for inv in inv_by_plate:
+                    combined_map[inv.id] = inv
+                
                 # Ensure invoice list is unique by id
                 display_invoices = list(combined_map.values())
                 display_invoices.sort(key=lambda x: (x.invoice_date or datetime.min, x.id))
                 seen_ids = set()
                 display_invoices = [inv for inv in display_invoices if not (getattr(inv, 'id', None) in seen_ids or seen_ids.add(getattr(inv, 'id', None)))]
-                valid_display_invoices = [inv for inv in display_invoices if _plate_from_reference(inv.reference)]
-                # If there are no valid reference invoices, skip this vehicle entirely
-                if not valid_display_invoices:
-                    continue
+                
+                # FIX: Calculate total invoice count from ALL invoices (for returning vehicle status)
+                total_invoice_count = len(display_invoices)
+                
+                # Filter to date range for display
+                valid_display_invoices = [inv for inv in display_invoices if _inv_in_range(inv)]
+                
+                # If there are no valid reference invoices in range, but we have invoices outside range,
+                # still show the vehicle if it's a returning customer
+                if not valid_display_invoices and total_invoice_count > 0:
+                    # Use the most recent invoice for display
+                    valid_display_invoices = [display_invoices[-1]] if display_invoices else []
 
                 invoice_list = []
                 for invoice in valid_display_invoices:
@@ -387,7 +444,9 @@ def api_vehicle_tracking_data(request):
                 # Recalculate totals based on valid reference invoices
                 total_spent = sum((inv.total_amount or Decimal('0')) for inv in valid_display_invoices)
                 invoice_count = len(valid_display_invoices)
-                is_returning = invoice_count > 1
+                # FIX: is_returning should be based on TOTAL invoice count, not just display invoices
+                # This ensures returning vehicles are correctly identified even if only one invoice is in date range
+                is_returning = total_invoice_count > 1
                 recent_plate = None
                 try:
                     recent_source = list(valid_display_invoices)

@@ -410,10 +410,13 @@ def _process_csv_import(csv_file, clear_existing=False):
 
 
 @login_required
-@permission_required('tracker.view_labourcode', raise_exception=True)
 @require_http_methods(['GET'])
 def api_labour_codes(request):
     """API endpoint to get labour codes for JS usage"""
+    # Only superusers can access labour codes API
+    if not request.user.is_superuser:
+        from django.http import JsonResponse
+        return JsonResponse({'error': 'Permission denied'}, status=403)
     codes = list(
         LabourCode.objects.filter(is_active=True).values('code', 'description', 'category')
     )
