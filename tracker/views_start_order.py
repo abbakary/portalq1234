@@ -643,6 +643,12 @@ def api_update_order_from_extraction(request):
         priority = request.POST.get('extracted_priority', 'medium').strip()
         services = request.POST.get('extracted_services', '').strip()
 
+        # Additional order details for sales/service orders
+        item_name = request.POST.get('extracted_item_name', '').strip()
+        brand = request.POST.get('extracted_brand', '').strip()
+        quantity = request.POST.get('extracted_quantity', '').strip()
+        tire_type = request.POST.get('extracted_tire_type', 'New').strip()
+
         plate_number = request.POST.get('extracted_plate', '').strip().upper()
         vehicle_make = request.POST.get('extracted_make', '').strip()
         vehicle_model = request.POST.get('extracted_model', '').strip()
