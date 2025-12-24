@@ -779,30 +779,95 @@
                 }
               }
 
-              // Render services/add-ons as checkboxes
+              // Render services/add-ons as attractive card-like checkboxes
               function renderEditServices(services, type) {
                 editServicesContainer.innerHTML = '';
                 if (!services || services.length === 0) {
-                  editServicesContainer.innerHTML = '<div class="col-12 text-muted text-center py-3"><small>No ' + (type === 'addon' ? 'add-ons' : 'services') + ' available</small></div>';
+                  editServicesContainer.innerHTML = '<div class="col-12 text-muted text-center py-3"><small><i class="fa fa-inbox me-2"></i>No ' + (type === 'addon' ? 'add-ons' : 'services') + ' available</small></div>';
                   return;
                 }
 
-                services.forEach(service => {
+                services.forEach((service, index) => {
                   const col = document.createElement('div');
-                  col.className = 'col-md-6';
-                  const minutesHtml = service.estimated_minutes ? ` <span class="badge bg-light text-dark ms-1">${service.estimated_minutes} min</span>` : '';
+                  col.className = 'col-md-6 col-lg-4 mb-2';
+                  const checkboxId = `edit_svc_${service.id || service.name.replace(/\s+/g, '_')}`;
+                  const icon = type === 'addon' ? 'fa-plus-circle' : 'fa-wrench';
+                  const color = type === 'addon' ? '#9b59b6' : '#3498db';
+                  const minutes = service.estimated_minutes || 0;
+
                   col.innerHTML = `
-                    <div class="form-check">
-                      <input class="form-check-input edit-service-checkbox" type="checkbox"
-                             id="edit_svc_${service.id || service.name.replace(/\s+/g, '_')}"
-                             name="services"
-                             value="${service.name}">
-                      <label class="form-check-label" for="edit_svc_${service.id || service.name.replace(/\s+/g, '_')}">
-                        ${service.name}${minutesHtml}
-                      </label>
+                    <div class="card service-card position-relative border-0 shadow-sm h-100" style="cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;">
+                      <div class="card-body p-3 position-relative">
+                        <div class="form-check mb-0">
+                          <input class="form-check-input edit-service-checkbox position-absolute" type="checkbox"
+                                 id="${checkboxId}"
+                                 name="services"
+                                 value="${service.name}"
+                                 style="opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                          <label class="form-check-label w-100 mb-0" for="${checkboxId}" style="cursor: pointer; display: block;">
+                            <div class="d-flex align-items-start gap-2 h-100">
+                              <div class="flex-shrink-0 pt-1">
+                                <i class="fa ${icon}" style="color: ${color}; font-size: 1.25rem;"></i>
+                              </div>
+                              <div class="flex-grow-1">
+                                <strong class="d-block mb-2 text-truncate" style="font-size: 0.95rem;">${service.name}</strong>
+                                ${minutes > 0 ? `<small class="text-muted d-block"><i class="fa fa-clock me-1"></i><strong>${minutes} min</strong></small>` : '<small class="text-muted d-block text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">' + (type === 'addon' ? 'Add-on' : 'Service') + '</small>'}
+                              </div>
+                              <div class="flex-shrink-0">
+                                <i class="fa fa-check-circle position-absolute" style="color: ${color}; font-size: 1.5rem; right: 0.75rem; top: 0.75rem; opacity: 0; transition: opacity 0.2s ease;"></i>
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   `;
                   editServicesContainer.appendChild(col);
+
+                  // Add interactivity
+                  const card = col.querySelector('.service-card');
+                  const checkbox = col.querySelector('input[type="checkbox"]');
+                  const checkIcon = col.querySelector('i.fa-check-circle');
+
+                  card.addEventListener('click', function(e) {
+                    if (e.target.type !== 'checkbox') {
+                      checkbox.checked = !checkbox.checked;
+                      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                  });
+
+                  card.addEventListener('mouseenter', function() {
+                    if (!checkbox.checked) {
+                      this.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.12)';
+                    }
+                    this.style.transform = 'translateY(-2px)';
+                  });
+
+                  card.addEventListener('mouseleave', function() {
+                    if (checkbox.checked) {
+                      this.style.boxShadow = `0 4px 14px rgba(${color === '#3498db' ? '52, 152, 219' : '155, 89, 182'}, 0.4), inset 0 0 0 2px ${color}`;
+                    } else {
+                      this.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)';
+                    }
+                    this.style.transform = 'translateY(0)';
+                  });
+
+                  checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                      card.style.borderColor = color;
+                      card.style.borderWidth = '2px';
+                      card.style.borderStyle = 'solid';
+                      card.style.backgroundColor = color === '#3498db' ? '#ebf5fb' : '#f4ecf7';
+                      card.style.boxShadow = `0 4px 14px rgba(${color === '#3498db' ? '52, 152, 219' : '155, 89, 182'}, 0.4), inset 0 0 0 2px ${color}`;
+                      checkIcon.style.opacity = '1';
+                    } else {
+                      card.style.borderColor = 'transparent';
+                      card.style.borderWidth = '1px';
+                      card.style.backgroundColor = 'white';
+                      card.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)';
+                      checkIcon.style.opacity = '0';
+                    }
+                  });
                 });
               }
 
