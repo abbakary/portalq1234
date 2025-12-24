@@ -1259,7 +1259,8 @@ document.addEventListener('DOMContentLoaded', function(){
 
       fetch(this.action, {
         method: 'POST',
-        body: formData
+        body: formData,
+        redirect: 'follow'
       })
       .then(r => {
         if (r.ok) {
@@ -1268,9 +1269,17 @@ document.addEventListener('DOMContentLoaded', function(){
             window.location.reload();
           }, 500);
         } else {
-          alert('Failed to update order details. Status: ' + r.status);
-          submitBtn.innerHTML = originalText;
-          submitBtn.disabled = false;
+          // Check if it's a redirect response (3xx status)
+          if (r.type === 'opaqueredirect' || (r.status >= 300 && r.status < 400)) {
+            // Redirect successful, reload
+            setTimeout(() => {
+              window.location.reload();
+            }, 500);
+          } else {
+            alert('Failed to update order details. Status: ' + r.status);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+          }
         }
       })
       .catch(error => {
