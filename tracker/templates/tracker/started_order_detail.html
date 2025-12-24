@@ -104,1433 +104,602 @@
               </button>
             </div>
 
-        
-
-    
-          <!-- Complete Order Modal - With Signature Capture -->
-          <div class="modal fade" id="completeOrderModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-              <div class="modal-content">
-                <form id="completeOrderForm" method="post" action="{% url 'tracker:complete_order' pk=order.id %}">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="complete_order">
-                  <input type="hidden" name="signature_data" id="signatureDataInput">
-                  <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title"><i class="fa fa-pen me-2"></i>Complete Order & Capture Signature</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                  </div>
-                  <div class="modal-body">
-                    <!-- Alert when order exceeds 2 hours -->
-                    <div id="delayReasonAlert" class="alert alert-warning alert-dismissible fade show" style="display:none;">
-                      <i class="fa fa-exclamation-triangle me-2"></i>
-                      <strong>Order Exceeds Expected Time</strong>
-                      <p class="mb-0 mt-2">This order has exceeded the expected duration. You must select a delay reason before completing.</p>
-                    </div>
-
-                    <!-- Signature Canvas Section -->
-                    <div class="mb-4">
-                      <label class="form-label fw-bold text-dark">
-                        <i class="fa fa-pen me-2"></i>Customer Signature <span class="text-danger">*</span>
-                      </label>
-                      <div class="border rounded p-3 bg-light" style="border: 2px solid #dee2e6; cursor: crosshair; min-height: 200px; position: relative;">
-                        <canvas id="completionSignaturePad" style="display: block; width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: crosshair;"></canvas>
-                      </div>
-                      <div class="d-flex gap-2 mt-2">
-                        <button type="button" id="clearCompletionSignature" class="btn btn-sm btn-outline-secondary">
-                          <i class="fa fa-eraser me-1"></i>Clear Signature
-                        </button>
-                        <small class="text-muted ms-auto align-self-center">Use mouse or touch to draw</small>
-                      </div>
-                    </div>
-
-                    <!-- Delay Reason Form -->
-                    <div class="mb-3" id="delayReasonSection">
-                      <label class="form-label fw-bold text-dark mb-2">
-                        <i class="fa fa-exclamation-circle me-2 text-danger"></i><span id="delayReasonLabel">Reason for Delays</span> <span id="delayReasonRequired" class="text-danger" style="display:none;">*</span><small class="fw-normal text-muted" id="delayReasonOptionalText"> (optional)</small>
-                      </label>
-
-                      <!-- Category Dropdown -->
-                      <div class="mb-2">
-                        <label class="form-label text-muted small">Category</label>
-                        <select id="delayReasonCategory" name="delay_reason_category" class="form-select">
-                          <option value="">-- Select Category --</option>
-                          <option value="parts">Parts-Related Delays</option>
-                          <option value="technical">Technical / Diagnostic Issues</option>
-                          <option value="workload">High Workload / Operational Capacity</option>
-                          <option value="customer">Customer-Related Causes</option>
-                          <option value="administrative">Administrative / System Issues</option>
-                          <option value="quality">Quality-Control & Testing Delays</option>
-                          <option value="external">External / Environmental Factors</option>
-                        </select>
-                      </div>
-
-                      <!-- Specific Reason Dropdown -->
-                      <div class="mb-2">
-                        <label class="form-label text-muted small">Specific Reason <span id="reasonRequiredBadge" class="badge bg-danger ms-2" style="display:none;">Required</span></label>
-                        <select id="delayReasonDropdown" name="delay_reason" class="form-select">
-                          <option value="">-- Select Specific Reason --</option>
-                        </select>
-                        <div id="selectedReasonDisplay" class="alert alert-info mt-2" style="display:none;">
-                          <i class="fa fa-check-circle me-2"></i>
-                          <strong>Selected:</strong> <span id="selectedReasonText"></span>
-                        </div>
-                      </div>
-
-                      <!-- Custom Comments -->
-                      <div>
-                        <label class="form-label text-muted small">Additional Comments (optional)</label>
-                        <textarea id="delayReasonComments" name="delay_reason_comments" class="form-control form-control-sm" rows="2" placeholder="Add any additional details about the delay..."></textarea>
-                      </div>
-
-                      <small class="text-muted d-block mt-2">
-                        <i class="fa fa-info-circle me-1"></i><span id="delayReasonHelpText">Select the reason if order exceeded 2 hours.</span>
-                      </small>
-                    </div>
-
-                    <div id="delayReasonError" class="alert alert-danger" style="display:none;"></div>
-                  </div>
-                  <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success fw-bold">
-                      <i class="fa fa-check-circle me-2"></i>Complete Order
-                    </button>
-                  </div>
-                </form>
-              </div>
+            <!-- Complete Order -->
+            <div class="col-sm-6 col-lg-3">
+              <button type="button" id="completeOrderBtn" class="btn btn-success w-100">
+                <i class="fa fa-check-circle me-2"></i>Complete Order
+              </button>
             </div>
           </div>
-
-          <div class="modal fade" id="branchMismatchModal" tabindex="-1">
-            <div class="modal-dialog">
-              <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                  <h5 class="modal-title">Branch Mismatch</h5>
-                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                  <p class="mb-2">You are viewing an order for <strong>{{ order.branch.name }}</strong> while your branch is <strong>{{ user_branch.name }}</strong>.</p>
-                  <p class="mb-0">Proceed only if you intend to work on this cross-branch order.</p>
-                </div>
-                <div class="modal-footer bg-light">
-                  <a href="{% url 'tracker:started_orders_dashboard' %}" class="btn btn-outline-secondary">Back to Started Orders</a>
-                  <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Continue</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Invoice Upload Modal (Shared/Reusable) -->
-          {% include 'tracker/partials/invoice_upload_modal.html' %}
-
-          <!-- Legacy Script Support - Keep for backward compatibility -->
-          <script>
-            document.addEventListener('DOMContentLoaded', function(){
-              try {
-                var mismatch = {{ branch_mismatch|yesno:'true,false' }};
-                if (mismatch) {
-                  var bmEl = document.getElementById('branchMismatchModal');
-                  if (bmEl) { new bootstrap.Modal(bmEl).show(); }
-                }
-              } catch(e){}
-              // Legacy script initialization
-            });
-          </script>
-
-          <!-- Removed: Inline modal - Now using shared partial -->
-          {% comment %}
-          <div class="modal fade" id="uploadInvoiceModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-xl">
-              <div class="modal-content">
-                <div class="modal-header bg-light border-bottom">
-                  <h5 class="modal-title">
-                    <i class="fa fa-file-invoice me-2"></i>Create Invoice for Order {{ order.order_number }}
-                  </h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-
-                <form id="manualInvoiceForm" method="post">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="create_invoice_manual">
-                  <input type="hidden" name="selected_order_id" value="{{ order.id }}">
-                  {% if vehicle and vehicle.plate_number %}<input type="hidden" name="plate" value="{{ vehicle.plate_number }}">{% endif %}
-                  {% if order.customer %}<input type="hidden" name="pre_selected_customer_id" value="{{ order.customer.id }}">{% endif %}
-
-                  <!-- Hidden fields for additional details -->
-                  <input type="hidden" name="payment_method" id="hiddenPaymentMethod" value="">
-                  <input type="hidden" name="delivery_terms" id="hiddenDeliveryTerms" value="">
-                  <input type="hidden" name="attended_by" id="hiddenAttendedBy" value="">
-                  <input type="hidden" name="kind_attention" id="hiddenKindAttention" value="">
-                  <input type="hidden" name="remarks" id="hiddenRemarks" value="">
-                  <input type="hidden" name="notes" id="hiddenNotes" value="">
-
-                  <!-- Quick Info Bar -->
-                  <div class="alert alert-info mb-3 border-0" role="alert">
-                    <div class="d-flex align-items-center">
-                      <i class="fa fa-lightbulb me-3" style="font-size: 18px;"></i>
-                      <div>
-                        <strong>Tip:</strong> Upload a PDF invoice to auto-extract data, or fill in the form manually. All fields are editable.
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
-                    <!-- Upload Section -->
-                    <div class="card mb-3">
-                      <div class="card-header bg-light">
-                        <strong><i class="fa fa-file-upload me-2"></i>Upload PDF (Optional)</strong>
-                      </div>
-                      <div class="card-body">
-                        <div class="mb-3">
-                          <label class="form-label">Select PDF File</label>
-                          <input type="file" id="startedOrderInvoiceFile" class="form-control" accept=".pdf" data-max-file-size="50485760">
-                          <small class="text-muted">PDF files only. Max 50MB. Leave empty to enter data manually.</small>
-                        </div>
-
-                        <div id="startedUploadError" class="alert alert-danger" style="display:none" role="alert"></div>
-                        <div id="extractionSuccess" class="alert alert-success" style="display:none" role="alert">
-                          <i class="fa fa-check-circle me-2"></i>Data extracted successfully! The form below has been auto-populated.
-                        </div>
-                        <div id="startedUploadProgress" class="progress" style="display:none;">
-                          <div class="progress-bar progress-bar-striped progress-bar-animated" id="startedUploadProgressBar" role="progressbar" style="width: 0%"></div>
-                        </div>
-
-                        <button type="button" id="startedUploadBtn" class="btn btn-primary">
-                          <i class="fa fa-upload me-2"></i>Upload & Extract
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Extracted Data Preview -->
-                    <div id="uploadedInvoicePreview" style="display:none;" class="card mb-3">
-                      <div class="card-header bg-light">
-                        <strong><i class="fa fa-check-circle me-2 text-success"></i>Extracted Data Preview</strong>
-                        <small class="text-muted ms-2">Edit the fields below as needed</small>
-                      </div>
-                      <div class="card-body" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
-                        <div class="row g-2">
-                          <div class="col-md-6">
-                            <small class="text-muted d-block">Customer Name</small>
-                            <p id="previewCustomerName" class="mb-2">-</p>
-                          </div>
-                          <div class="col-md-6">
-                            <small class="text-muted d-block">Phone</small>
-                            <p id="previewCustomerPhone" class="mb-2">-</p>
-                          </div>
-                          <div class="col-md-6">
-                            <small class="text-muted d-block">Email</small>
-                            <p id="previewCustomerEmail" class="mb-2">-</p>
-                          </div>
-                          <div class="col-md-6">
-                            <small class="text-muted d-block">Address</small>
-                            <p id="previewCustomerAddress" class="mb-2">-</p>
-                          </div>
-                          <div class="col-md-6">
-                            <small class="text-muted d-block">Invoice Number</small>
-                            <p id="previewInvoiceNo" class="mb-2"><strong>-</strong></p>
-                          </div>
-                          <div class="col-md-6">
-                            <small class="text-muted d-block">Invoice Date</small>
-                            <p id="previewInvoiceDate" class="mb-2"><strong>-</strong></p>
-                          </div>
-                          <div class="col-md-4">
-                            <small class="text-muted d-block">Subtotal</small>
-                            <p id="previewSubtotal" class="mb-0">-</p>
-                          </div>
-                          <div class="col-md-4">
-                            <small class="text-muted d-block">Tax/VAT</small>
-                            <p id="previewTax" class="mb-0">-</p>
-                          </div>
-                          <div class="col-md-4">
-                            <small class="text-muted d-block">Total</small>
-                            <p id="previewTotal" class="mb-0 fs-6"><strong>-</strong></p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Existing Customer Alert -->
-                    <div id="existingCustomerAlert" class="alert alert-info alert-dismissible fade show mb-3" style="display:none;">
-                      <i class="fa fa-info-circle me-2"></i>
-                      <strong>Existing Customer Found!</strong> A customer with this phone number already exists.
-                      <span id="existingCustomerName"></span>
-                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-
-                    <!-- Customer Information Section -->
-                    <div class="card mb-3">
-                      <div class="card-header bg-light">
-                        <strong><i class="fa fa-user me-2"></i>Customer Information</strong>
-                      </div>
-                      <div class="card-body">
-                        <div class="row mb-2">
-                          <div class="col-md-6">
-                            <label class="form-label">Full Name *</label>
-                            <input type="text" name="customer_name" class="form-control" id="manualCustomerName" value="{{ order.customer.full_name }}" placeholder="Customer full name" required>
-                          </div>
-                          <div class="col-md-6">
-                            <label class="form-label">Phone <small class="text-muted">(optional)</small></label>
-                            <input type="tel" name="customer_phone" class="form-control" id="manualCustomerPhone" placeholder="Phone number">
-                          </div>
-                        </div>
-                        <div class="row mb-2">
-                          <div class="col-md-6">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="customer_email" class="form-control" placeholder="email@example.com">
-                          </div>
-                          <div class="col-md-6">
-                            <label class="form-label">Customer Type *</label>
-                            <select name="customer_type" id="invoiceCustomerType" class="form-select" required>
-                              <option value="">Select customer type</option>
-                              <option value="personal">Personal</option>
-                              <option value="company">Private Company</option>
-                              <option value="ngo">NGO</option>
-                              <option value="government">Government</option>
-                            </select>
-                          </div>
-                        </div>
-                        
-                        <!-- Personal Subtype (shown only for personal type) -->
-                        <div class="row mb-2" id="personalSubtypeWrapper" style="display:none;">
-                          <div class="col-md-6">
-                            <label class="form-label">Personal Subtype</label>
-                            <select name="customer_personal_subtype" class="form-select">
-                              <option value="">Select subtype</option>
-                              <option value="owner">Owner</option>
-                              <option value="driver">Driver</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <!-- Organization Fields (shown for non-personal types) -->
-                        <div class="row mb-2" id="organizationDetailsWrapper" style="display:none;">
-                          <div class="col-md-6">
-                            <label class="form-label">Organization Name</label>
-                            <input type="text" name="customer_organization_name" class="form-control" id="organizationNameField" placeholder="Organization name">
-                          </div>
-                          <div class="col-md-6">
-                            <label class="form-label">Tax Number</label>
-                            <input type="text" name="customer_tax_number" class="form-control" id="taxNumberField" placeholder="Tax identification number">
-                          </div>
-                        </div>
-
-                        <div class="row mb-2">
-                          <div class="col-md-12">
-                            <label class="form-label">Address</label>
-                            <input type="text" name="customer_address" class="form-control" placeholder="Customer address">
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Invoice Information Section -->
-                    <div class="card mb-3">
-                      <div class="card-header bg-light">
-                        <strong><i class="fa fa-file-invoice me-2"></i>Invoice Information</strong>
-                      </div>
-                      <div class="card-body">
-                        <div class="row mb-2">
-                          <div class="col-md-6">
-                            <label class="form-label fw-bold">Invoice Number</label>
-                            <input type="text" name="invoice_number" class="form-control" placeholder="e.g., INV-001">
-                          </div>
-                          <div class="col-md-6">
-                            <label class="form-label fw-bold">Invoice Date</label>
-                            <input type="date" name="invoice_date" class="form-control" value="{% now 'Y-m-d' %}" required>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Payment Information Section -->
-                    <div class="card mb-3">
-                      <div class="card-header bg-light">
-                        <strong><i class="fa fa-money me-2"></i>Payment Information</strong>
-                      </div>
-                      <div class="card-body">
-                        <div class="row mb-2">
-                          <div class="col-md-6">
-                            <label class="form-label fw-bold">Subtotal</label>
-                            <div class="input-group">
-                              <span class="input-group-text">{{ order.branch.code|default:"TSH" }}</span>
-                              <input type="number" name="subtotal" class="form-control" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                          </div>
-                          <div class="col-md-6">
-                            <label class="form-label fw-bold">Tax/VAT</label>
-                            <div class="input-group">
-                              <span class="input-group-text">{{ order.branch.code|default:"TSH" }}</span>
-                              <input type="number" name="tax_amount" class="form-control" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="row mb-2">
-                          <div class="col-md-12">
-                            <label class="form-label fw-bold">Total Amount *</label>
-                            <div class="input-group">
-                              <span class="input-group-text">{{ order.branch.code|default:"TSH" }}</span>
-                              <input type="number" name="total_amount" class="form-control" step="0.01" min="0" placeholder="0.00" required>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="modal-footer" style="border-top: 1px solid #dee2e6; padding: 20px; background: #f8f9fa;">
-                    <div class="text-center w-100 mb-3">
-                      <p class="text-muted small mb-0">
-                        <i class="fa fa-info-circle me-1"></i>
-                        Fill in the required fields (marked with *), then click the button below to create the invoice.
-                      </p>
-                    </div>
-                    <div class="w-100 d-flex gap-2" style="margin-top: -15px;">
-                      <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        <i class="fa fa-times me-2"></i>Cancel
-                      </button>
-                      <button type="submit" class="btn btn-success btn-lg flex-grow-1" style="font-weight: 600;">
-                        <i class="fa fa-check-circle me-2"></i>Create Invoice
-                      </button>
-                    </div>
-                  </div>
-                </form>
-          </div>
-          </div>
-          </div>
-
-          {% endcomment %}
-          
-          <!-- Edit Order Details Modal -->
-          <div class="modal fade" id="editOrderDetailsModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-              <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                  <h5 class="modal-title"><i class="fa fa-list me-2"></i>Edit Order Details</h5>
-                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="orderDetailsForm" method="post">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="update_order_details">
-                  <div class="modal-body">
-                    <!-- Order Type Selection -->
-                    <div class="mb-4">
-                      <label class="form-label fw-bold">Order Type</label>
-                      <div class="row g-2">
-                        <div class="col-md-6">
-                          <select id="editOrderType" name="order_type" class="form-select">
-                            <option value="service" {% if order.type == 'service' %}selected{% endif %}>🔧 Service</option>
-                            <option value="sales" {% if order.type == 'sales' %}selected{% endif %}>🛒 Sales (Items)</option>
-                            <option value="labour" {% if order.type == 'labour' %}selected{% endif %}>🛠️ Labour</option>
-                            <option value="inquiry" {% if order.type == 'inquiry' %}selected{% endif %}>❓ Inquiry</option>
-                          </select>
-                        </div>
-                        <div class="col-md-6">
-                          <div class="alert alert-info mb-0 py-2">
-                            <small id="orderTypeInfo">
-                              <i class="fa fa-info-circle me-1"></i>Select appropriate order type
-                            </small>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Item Selection for Sales Orders -->
-                    <div id="itemSelectionSection" class="mb-4" style="display:none;">
-                      <div class="card border-light bg-light">
-                        <div class="card-body">
-                          <label class="form-label fw-bold mb-3"><i class="fa fa-shopping-cart me-2"></i>Select Item</label>
-
-                          <!-- Tab-based interface for Labour Code Lookup vs Manual Entry -->
-                          <ul class="nav nav-tabs mb-3" role="tablist">
-                            <li class="nav-item" role="presentation">
-                              <button class="nav-link active" id="labourCodeTab" type="button" role="tab" aria-controls="labourCodePanel" aria-selected="true" data-bs-toggle="tab" data-bs-target="#labourCodePanel">
-                                <i class="fa fa-database me-1"></i>Labour Code
-                              </button>
-                            </li>
-                            <li class="nav-item" id="inventoryTabItem" role="presentation">
-                              <button class="nav-link" id="inventoryTab" type="button" role="tab" aria-controls="inventoryPanel" aria-selected="false" data-bs-toggle="tab" data-bs-target="#inventoryPanel">
-                                <i class="fa fa-box me-1"></i>Inventory
-                              </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                              <button class="nav-link" id="manualEntryTab" type="button" role="tab" aria-controls="manualEntryPanel" aria-selected="false" data-bs-toggle="tab" data-bs-target="#manualEntryPanel">
-                                <i class="fa fa-pen-to-square me-1"></i>Manual Entry
-                              </button>
-                            </li>
-                          </ul>
-
-                          <div class="tab-content">
-                            <!-- Labour Code Lookup Tab -->
-                            <div class="tab-pane fade show active" id="labourCodePanel" role="tabpanel">
-                              <div class="mb-3">
-                                <label class="form-label">Search Labour Code</label>
-                                <input type="text" id="labourCodeSearch" class="form-control" placeholder="Enter labour code or item name...">
-                                <small class="form-text text-muted">Type to search labour codes from database</small>
-                              </div>
-                              <div id="labourCodeResults" class="mb-3" style="display:none;">
-                                <div class="alert alert-info mb-0 py-2">
-                                  <small><i class="fa fa-spinner fa-spin me-1"></i>Searching labour codes...</small>
-                                </div>
-                              </div>
-                              <div id="labourCodeSelected" style="display:none;">
-                                <div class="alert alert-success py-2">
-                                  <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                      <strong id="labourCodeSelectedName">Item Name</strong><br>
-                                      <small>
-                                        Code: <span id="labourCodeSelectedCode"></span> •
-                                        Brand: <span id="labourCodeSelectedBrand"></span>
-                                      </small>
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" id="clearLabourCodeBtn">Clear</button>
-                                  </div>
-                                </div>
-                              </div>
-                              <input type="hidden" id="labourCodeId" name="labour_code_id">
-                            </div>
-
-                            <!-- Inventory Tab -->
-                            <div class="tab-pane fade" id="inventoryPanel" role="tabpanel">
-                              <div class="mb-3">
-                                <label class="form-label">Select from Inventory</label>
-                                <select id="editOrderItemSelect" name="item_id" class="form-select">
-                                  <option value="">Loading items...</option>
-                                </select>
-                                <small class="form-text text-muted">Select existing inventory items</small>
-                              </div>
-                              <div class="row g-2">
-                                <div class="col-md-6">
-                                  <label class="form-label">Brand</label>
-                                  <input type="text" id="editOrderBrand" class="form-control" readonly>
-                                </div>
-                                <div class="col-md-6">
-                                  <label class="form-label">Quantity</label>
-                                  <input type="number" id="editOrderQuantity" class="form-control" value="1" min="1">
-                                </div>
-                              </div>
-                            </div>
-
-                            <!-- Manual Entry Tab -->
-                            <div class="tab-pane fade" id="manualEntryPanel" role="tabpanel">
-                              <div class="mb-3">
-                                <label class="form-label">Item Name</label>
-                                <input type="text" id="itemNameManual" name="item_name_manual" class="form-control" placeholder="Enter item name...">
-                              </div>
-                              <div class="row g-2">
-                                <div class="col-md-6">
-                                  <label class="form-label">Brand</label>
-                                  <input type="text" id="itemBrandManual" name="item_brand_manual" class="form-control" placeholder="Enter brand name...">
-                                </div>
-                                <div class="col-md-6">
-                                  <label class="form-label">Quantity</label>
-                                  <input type="number" id="itemQuantityManual" name="item_quantity" class="form-control" value="1" min="1">
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Services/Add-ons Selection -->
-                    <div id="servicesSection" class="mb-4" style="display:none;">
-                      <div class="card border-light">
-                        <div class="card-body">
-                          <label class="form-label fw-bold mb-3">
-                            <i class="fa fa-check-circle me-2"></i>
-                            <span id="servicesLabel">Services</span>
-                          </label>
-                          <div id="editServicesContainer" class="row g-2">
-                            <div class="col-12 text-muted text-center py-3">
-                              <small><i class="fa fa-spinner fa-spin me-1"></i>Loading services...</small>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Duration -->
-                    <div class="mb-3">
-                      <label class="form-label fw-bold">Estimated Duration (minutes)</label>
-                      <input type="number" name="estimated_duration" id="orderEstimatedDuration" class="form-control" value="{{ order.estimated_duration|default:'' }}" min="0" placeholder="0">
-                      <small class="text-muted">Auto-calculated based on selected services (optional)</small>
-                    </div>
-                  </div>
-                  <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i class="fa fa-save me-2"></i>Save Changes</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          <script>
-            // Safe querySelectorAll function with null check
-            function safeQuerySelectorAll(selector, context) {
-              const element = context ? context.querySelectorAll(selector) : document.querySelectorAll(selector);
-              return element || [];
-            }
-
-            // Customer type visibility toggle
-            const customerTypeEl = document.getElementById('invoiceCustomerType');
-            const personalSubtypeWrapper = document.getElementById('personalSubtypeWrapper');
-            const organizationDetailsWrapper = document.getElementById('organizationDetailsWrapper');
-
-            if (customerTypeEl) {
-              function updateCustomerTypeFields() {
-                const selectedType = customerTypeEl.value;
-                
-                if (selectedType === 'personal') {
-                  if (personalSubtypeWrapper) personalSubtypeWrapper.style.display = 'block';
-                  if (organizationDetailsWrapper) organizationDetailsWrapper.style.display = 'none';
-                } else if (selectedType && ['company', 'ngo', 'government'].includes(selectedType)) {
-                  if (personalSubtypeWrapper) personalSubtypeWrapper.style.display = 'none';
-                  if (organizationDetailsWrapper) organizationDetailsWrapper.style.display = 'block';
-                } else {
-                  if (personalSubtypeWrapper) personalSubtypeWrapper.style.display = 'none';
-                  if (organizationDetailsWrapper) organizationDetailsWrapper.style.display = 'none';
-                }
-              }
-
-              customerTypeEl.addEventListener('change', updateCustomerTypeFields);
-              updateCustomerTypeFields();
-            }
-
-            // Edit Order Details - Handle order type change and dynamic services
-            document.addEventListener('DOMContentLoaded', function(){
-              const editOrderTypeEl = document.getElementById('editOrderType');
-              const itemSelectionSection = document.getElementById('itemSelectionSection');
-              const servicesSection = document.getElementById('servicesSection');
-              const servicesLabel = document.getElementById('servicesLabel');
-              const editServicesContainer = document.getElementById('editServicesContainer');
-              const editOrderItemSelect = document.getElementById('editOrderItemSelect');
-              const editOrderBrand = document.getElementById('editOrderBrand');
-              const editOrderQuantity = document.getElementById('editOrderQuantity');
-              const orderTypeInfo = document.getElementById('orderTypeInfo');
-
-              let allServices = { service_types: [], service_addons: [], inventory_items: [], labour_codes: [] };
-
-              // Load services and items from API
-              function loadServicesAndItems() {
-                fetch('/tracker/api/orders/service-types/', {
-                  headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                })
-                .then(r => r.json())
-                .then(data => {
-                  allServices = data;
-                  updateOrderTypeUI();
-                })
-                .catch(err => {
-                  console.error('Error loading services:', err);
-                  editServicesContainer.innerHTML = '<div class="col-12 text-danger"><small>Failed to load services</small></div>';
-                });
-              }
-
-              // Update UI based on selected order type
-              function updateOrderTypeUI() {
-                const selectedType = editOrderTypeEl.value;
-                const inventoryTabItem = document.getElementById('inventoryTabItem');
-
-                // Update info text
-                const typeInfoMap = {
-                  'service': 'Service order - Select labour codes or services to perform',
-                  'sales': 'Sales order - Select item/tire to sell',
-                  'labour': 'Labour order - Select labour codes for charges',
-                  'inquiry': 'Inquiry - Follow-up with customer'
-                };
-                orderTypeInfo.textContent = '✓ ' + (typeInfoMap[selectedType] || 'Select appropriate order type');
-
-                // Show/hide sections based on order type
-                if (selectedType === 'sales') {
-                  itemSelectionSection.style.display = 'block';
-                  servicesLabel.textContent = 'Add-ons';
-                  renderEditServices(allServices.service_addons, 'addon');
-                  servicesSection.style.display = 'block';
-                  // Hide Inventory tab for sales orders - use Labour Code or Manual Entry instead
-                  if (inventoryTabItem) {
-                    inventoryTabItem.style.display = 'none';
-                  }
-                } else if (selectedType === 'service') {
-                  itemSelectionSection.style.display = 'none';
-                  servicesLabel.textContent = 'Labour Codes';
-                  renderEditLabourCodes(allServices.labour_codes, 'service');
-                  servicesSection.style.display = 'block';
-                  // Show inventory tab for service orders if needed
-                  if (inventoryTabItem) {
-                    inventoryTabItem.style.display = 'block';
-                  }
-                } else if (selectedType === 'labour') {
-                  itemSelectionSection.style.display = 'none';
-                  servicesLabel.textContent = 'Labour Codes';
-                  renderEditLabourCodes(allServices.labour_codes, 'labour');
-                  servicesSection.style.display = 'block';
-                  // Show inventory tab for labour orders if needed
-                  if (inventoryTabItem) {
-                    inventoryTabItem.style.display = 'block';
-                  }
-                } else {
-                  itemSelectionSection.style.display = 'none';
-                  servicesSection.style.display = 'none';
-                  // Show inventory tab for other order types
-                  if (inventoryTabItem) {
-                    inventoryTabItem.style.display = 'block';
-                  }
-                }
-              }
-
-              // Render services/add-ons as attractive card-like checkboxes
-              function renderEditServices(services, type) {
-                editServicesContainer.innerHTML = '';
-                if (!services || services.length === 0) {
-                  editServicesContainer.innerHTML = '<div class="col-12 text-muted text-center py-3"><small><i class="fa fa-inbox me-2"></i>No ' + (type === 'addon' ? 'add-ons' : 'services') + ' available</small></div>';
-                  return;
-                }
-
-                services.forEach((service, index) => {
-                  const col = document.createElement('div');
-                  col.className = 'col-md-6 col-lg-4 mb-2';
-                  const checkboxId = `edit_svc_${service.id || service.name.replace(/\s+/g, '_')}`;
-                  const icon = type === 'addon' ? 'fa-plus-circle' : 'fa-wrench';
-                  const color = type === 'addon' ? '#9b59b6' : '#3498db';
-                  const minutes = service.estimated_minutes || 0;
-
-                  col.innerHTML = `
-                    <div class="card service-card position-relative border-0 shadow-sm h-100" style="cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;">
-                      <div class="card-body p-3 position-relative">
-                        <div class="form-check mb-0">
-                          <input class="form-check-input edit-service-checkbox position-absolute" type="checkbox"
-                                 id="${checkboxId}"
-                                 name="services"
-                                 value="${service.name}"
-                                 style="opacity: 0; width: 100%; height: 100%; cursor: pointer;">
-                          <label class="form-check-label w-100 mb-0" for="${checkboxId}" style="cursor: pointer; display: block;">
-                            <div class="d-flex align-items-start gap-2 h-100">
-                              <div class="flex-shrink-0 pt-1">
-                                <i class="fa ${icon}" style="color: ${color}; font-size: 1.25rem;"></i>
-                              </div>
-                              <div class="flex-grow-1">
-                                <strong class="d-block mb-2 text-truncate" style="font-size: 0.95rem;">${service.name}</strong>
-                                ${minutes > 0 ? `<small class="text-muted d-block"><i class="fa fa-clock me-1"></i><strong>${minutes} min</strong></small>` : '<small class="text-muted d-block text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">' + (type === 'addon' ? 'Add-on' : 'Service') + '</small>'}
-                              </div>
-                              <div class="flex-shrink-0">
-                                <i class="fa fa-check-circle position-absolute" style="color: ${color}; font-size: 1.5rem; right: 0.75rem; top: 0.75rem; opacity: 0; transition: opacity 0.2s ease;"></i>
-                              </div>
-                            </div>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  `;
-                  editServicesContainer.appendChild(col);
-
-                  // Add interactivity
-                  const card = col.querySelector('.service-card');
-                  const checkbox = col.querySelector('input[type="checkbox"]');
-                  const checkIcon = col.querySelector('i.fa-check-circle');
-
-                  card.addEventListener('click', function(e) {
-                    if (e.target.type !== 'checkbox') {
-                      checkbox.checked = !checkbox.checked;
-                      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                  });
-
-                  card.addEventListener('mouseenter', function() {
-                    if (!checkbox.checked) {
-                      this.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.12)';
-                    }
-                    this.style.transform = 'translateY(-2px)';
-                  });
-
-                  card.addEventListener('mouseleave', function() {
-                    if (checkbox.checked) {
-                      this.style.boxShadow = `0 4px 14px rgba(${color === '#3498db' ? '52, 152, 219' : '155, 89, 182'}, 0.4), inset 0 0 0 2px ${color}`;
-                    } else {
-                      this.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)';
-                    }
-                    this.style.transform = 'translateY(0)';
-                  });
-
-                  checkbox.addEventListener('change', function() {
-                    if (this.checked) {
-                      card.style.borderColor = color;
-                      card.style.borderWidth = '2px';
-                      card.style.borderStyle = 'solid';
-                      card.style.backgroundColor = color === '#3498db' ? '#ebf5fb' : '#f4ecf7';
-                      card.style.boxShadow = `0 4px 14px rgba(${color === '#3498db' ? '52, 152, 219' : '155, 89, 182'}, 0.4), inset 0 0 0 2px ${color}`;
-                      checkIcon.style.opacity = '1';
-                    } else {
-                      card.style.borderColor = 'transparent';
-                      card.style.borderWidth = '1px';
-                      card.style.backgroundColor = 'white';
-                      card.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)';
-                      checkIcon.style.opacity = '0';
-                    }
-                  });
-                });
-              }
-
-              // Render labour codes as attractive card-like checkboxes
-              function renderEditLabourCodes(labourCodes, type) {
-                editServicesContainer.innerHTML = '';
-                if (!labourCodes || labourCodes.length === 0) {
-                  editServicesContainer.innerHTML = '<div class="col-12 text-muted text-center py-3"><small><i class="fa fa-inbox me-2"></i>No labour codes available</small></div>';
-                  return;
-                }
-
-                labourCodes.forEach((lc, index) => {
-                  const col = document.createElement('div');
-                  col.className = 'col-md-6 col-lg-4 mb-2';
-                  const checkboxId = `edit_lc_${lc.id || index}`;
-
-                  // Determine category icon and color
-                  let categoryIcon = 'fa-tools';
-                  let categoryColor = '#667eea';
-                  const category = (lc.category || '').toLowerCase();
-                  if (category.includes('labour')) {
-                    categoryIcon = 'fa-hammer';
-                    categoryColor = '#e74c3c';
-                  } else if (category.includes('service')) {
-                    categoryIcon = 'fa-wrench';
-                    categoryColor = '#3498db';
-                  } else if (category.includes('sales')) {
-                    categoryIcon = 'fa-shopping-cart';
-                    categoryColor = '#27ae60';
-                  } else if (category.includes('tyre')) {
-                    categoryIcon = 'fa-circle-notch';
-                    categoryColor = '#f39c12';
-                  }
-
-                  col.innerHTML = `
-                    <div class="card labour-code-card position-relative border-0 shadow-sm h-100" style="cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;">
-                      <div class="card-body p-3 position-relative">
-                        <div class="form-check mb-0">
-                          <input class="form-check-input edit-labour-code-checkbox position-absolute" type="checkbox"
-                                 id="${checkboxId}"
-                                 name="labour_codes"
-                                 value="${lc.id}"
-                                 data-labour-code-id="${lc.id}"
-                                 data-code="${lc.code}"
-                                 data-name="${lc.item_name || lc.description}"
-                                 data-brand="${lc.brand || 'N/A'}"
-                                 data-category="${lc.category || 'unspecified'}"
-                                 style="opacity: 0; width: 100%; height: 100%; cursor: pointer;">
-                          <label class="form-check-label w-100 mb-0" for="${checkboxId}" style="cursor: pointer; display: block;">
-                            <div class="d-flex align-items-start gap-2 h-100">
-                              <div class="flex-shrink-0 pt-1">
-                                <i class="fa ${categoryIcon}" style="color: ${categoryColor}; font-size: 1.25rem;"></i>
-                              </div>
-                              <div class="flex-grow-1 min-width-0">
-                                <strong class="d-block mb-2 text-truncate" style="font-size: 0.95rem;">${lc.item_name || lc.description}</strong>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem;">
-                                  <small class="text-muted d-block"><strong>Code:</strong> <code style="background: #f5f5f5; padding: 2px 4px; border-radius: 3px;">${lc.code}</code></small>
-                                  <small class="text-muted d-block"><strong>Brand:</strong> ${lc.brand || 'N/A'}</small>
-                                </div>
-                                <small class="text-muted d-block mt-2"><strong>Type:</strong> <span style="display: inline-block; background: ${categoryColor}20; color: ${categoryColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize;">${lc.category || 'unspecified'}</span></small>
-                              </div>
-                              <div class="flex-shrink-0">
-                                <i class="fa fa-check-circle position-absolute" style="color: #27ae60; font-size: 1.5rem; right: 0.75rem; top: 0.75rem; opacity: 0; transition: opacity 0.2s ease;"></i>
-                              </div>
-                            </div>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  `;
-                  editServicesContainer.appendChild(col);
-
-                  // Add interactivity to the card
-                  const card = col.querySelector('.labour-code-card');
-                  const checkbox = col.querySelector('input[type="checkbox"]');
-                  const checkIcon = col.querySelector('i.fa-check-circle');
-
-                  // Click to toggle checkbox
-                  card.addEventListener('click', function(e) {
-                    if (e.target.type !== 'checkbox') {
-                      checkbox.checked = !checkbox.checked;
-                      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                  });
-
-                  // Hover effects
-                  card.addEventListener('mouseenter', function() {
-                    if (!checkbox.checked) {
-                      this.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.12)';
-                    }
-                    this.style.transform = 'translateY(-2px)';
-                  });
-
-                  card.addEventListener('mouseleave', function() {
-                    if (checkbox.checked) {
-                      this.style.boxShadow = `0 4px 14px rgba(102, 126, 234, 0.4), inset 0 0 0 2px #667eea`;
-                    } else {
-                      this.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)';
-                    }
-                    this.style.transform = 'translateY(0)';
-                  });
-
-                  // Update card styling when checkbox changes
-                  checkbox.addEventListener('change', function() {
-                    if (this.checked) {
-                      card.style.borderColor = '#667eea';
-                      card.style.borderWidth = '2px';
-                      card.style.borderStyle = 'solid';
-                      card.style.backgroundColor = '#f0f4ff';
-                      card.style.boxShadow = '0 4px 14px rgba(102, 126, 234, 0.4), inset 0 0 0 2px #667eea';
-                      checkIcon.style.opacity = '1';
-                    } else {
-                      card.style.borderColor = 'transparent';
-                      card.style.borderWidth = '1px';
-                      card.style.backgroundColor = 'white';
-                      card.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)';
-                      checkIcon.style.opacity = '0';
-                    }
-                  });
-                });
-              }
-
-              // Populate item dropdown
-              function populateItemDropdown() {
-                const items = allServices.inventory_items || [];
-                editOrderItemSelect.innerHTML = '<option value="">Select item...</option>';
-
-                items.forEach(item => {
-                  const option = document.createElement('option');
-                  option.value = item.id;
-                  option.textContent = `${item.name} (${item.brand}) - ${item.quantity} in stock @ $${item.price}`;
-                  editOrderItemSelect.appendChild(option);
-                });
-              }
-
-              // Labour Code Lookup Functionality
-              const labourCodeSearch = document.getElementById('labourCodeSearch');
-              const labourCodeResults = document.getElementById('labourCodeResults');
-              const labourCodeSelected = document.getElementById('labourCodeSelected');
-              const labourCodeId = document.getElementById('labourCodeId');
-              const clearLabourCodeBtn = document.getElementById('clearLabourCodeBtn');
-
-              // Debounce function for search
-              function debounce(func, wait) {
-                let timeout;
-                return function executedFunction(...args) {
-                  const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                  };
-                  clearTimeout(timeout);
-                  timeout = setTimeout(later, wait);
-                };
-              }
-
-              // Search labour codes
-              const searchLabourCodes = debounce(function() {
-                const searchTerm = labourCodeSearch.value.trim();
-                if (!searchTerm || searchTerm.length < 2) {
-                  labourCodeResults.style.display = 'none';
-                  return;
-                }
-
-                fetch(`/tracker/api/orders/lookup-labour-code/?item_name=${encodeURIComponent(searchTerm)}`, {
-                  headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                })
-                .then(r => r.json())
-                .then(data => {
-                  if (data.success && data.labour_codes && data.labour_codes.length > 0) {
-                    labourCodeResults.innerHTML = '';
-                    data.labour_codes.forEach(lc => {
-                      const btn = document.createElement('button');
-                      btn.type = 'button';
-                      btn.className = 'btn btn-outline-primary btn-sm w-100 mb-2 text-start';
-                      btn.innerHTML = `
-                        <strong>${lc.item_name || lc.description}</strong><br>
-                        <small>Code: ${lc.code} • Brand: ${lc.brand || 'N/A'}</small>
-                      `;
-                      btn.onclick = function(e) {
-                        e.preventDefault();
-                        selectLabourCode(lc);
-                      };
-                      labourCodeResults.appendChild(btn);
-                    });
-                    labourCodeResults.style.display = 'block';
-                  } else {
-                    labourCodeResults.innerHTML = '<div class="alert alert-warning mb-0 py-2"><small>No labour codes found</small></div>';
-                    labourCodeResults.style.display = 'block';
-                  }
-                })
-                .catch(err => {
-                  console.error('Error searching labour codes:', err);
-                  labourCodeResults.innerHTML = '<div class="alert alert-danger mb-0 py-2"><small>Error searching labour codes</small></div>';
-                  labourCodeResults.style.display = 'block';
-                });
-              }, 300);
-
-              // Select a labour code
-              function selectLabourCode(lc) {
-                labourCodeId.value = lc.id;
-                document.getElementById('labourCodeSelectedCode').textContent = lc.code;
-                document.getElementById('labourCodeSelectedName').textContent = lc.item_name || lc.description;
-                document.getElementById('labourCodeSelectedBrand').textContent = lc.brand || 'N/A';
-                labourCodeResults.style.display = 'none';
-                labourCodeSearch.value = lc.item_name || lc.description;
-                labourCodeSelected.style.display = 'block';
-              }
-
-              // Clear labour code selection
-              if (clearLabourCodeBtn) {
-                clearLabourCodeBtn.addEventListener('click', function() {
-                  labourCodeId.value = '';
-                  labourCodeSearch.value = '';
-                  labourCodeSelected.style.display = 'none';
-                  labourCodeResults.style.display = 'none';
-                });
-              }
-
-              // Add search event listener
-              if (labourCodeSearch) {
-                labourCodeSearch.addEventListener('input', searchLabourCodes);
-                labourCodeSearch.addEventListener('focus', function() {
-                  if (this.value.trim().length >= 2) {
-                    labourCodeResults.style.display = 'block';
-                  }
-                });
-              }
-
-              // Handle item selection change
-              editOrderItemSelect.addEventListener('change', function(e) {
-                const itemId = e.target.value;
-                if (itemId) {
-                  const item = allServices.inventory_items.find(i => i.id == itemId);
-                  if (item) {
-                    editOrderBrand.value = item.brand || 'Unbranded';
-                  }
-                } else {
-                  editOrderBrand.value = '';
-                }
-              });
-
-              // Handle order type change
-              editOrderTypeEl.addEventListener('change', function() {
-                updateOrderTypeUI();
-                if (this.value === 'sales') {
-                  populateItemDropdown();
-                }
-              });
-
-              // Initial load and setup
-              loadServicesAndItems();
-            });
-
-            // Modal and form handling
-            document.addEventListener('DOMContentLoaded', function(){
-              if (typeof getCSRFToken !== 'function') {
-                window.getCSRFToken = function(){
-                  const name='csrftoken';
-                  const cookies=document.cookie?document.cookie.split(';'):[];
-                  for(let i=0;i<cookies.length;i++){const c=cookies[i].trim();if(c.substring(0,name.length+1)===(name+'=')){return decodeURIComponent(c.substring(name.length+1));}}
-                  return '';
-                };
-              }
-              const uploadBtn = document.getElementById('uploadInvoiceBtn');
-              const modalEl = document.getElementById('uploadInvoiceModal');
-              const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
-
-              // Upload elements
-              const fileInput = document.getElementById('startedOrderInvoiceFile');
-              const startedUploadBtn = document.getElementById('startedUploadBtn');
-              const startedUploadError = document.getElementById('startedUploadError');
-              const extractionSuccess = document.getElementById('extractionSuccess');
-              const uploadProgress = document.getElementById('startedUploadProgress');
-              const uploadProgressBar = document.getElementById('startedUploadProgressBar');
-              const uploadedInvoicePreview = document.getElementById('uploadedInvoicePreview');
-
-              // Manual form elements
-              const manualForm = document.getElementById('manualInvoiceForm');
-              const manualCustomerPhone = document.getElementById('manualCustomerPhone');
-              const existingCustomerAlert = document.getElementById('existingCustomerAlert');
-              const existingCustomerName = document.getElementById('existingCustomerName');
-
-              let extractedInvoiceData = null;
-
-              function getCSRF() {
-                return getCSRFToken() || '';
-              }
-
-              function showError(message, isDanger = true) {
-                if (startedUploadError) {
-                  startedUploadError.style.display = 'block';
-                  startedUploadError.innerHTML = message;
-                  startedUploadError.className = isDanger ? 'alert alert-danger' : 'alert alert-warning';
-                }
-                if (extractionSuccess) extractionSuccess.style.display = 'none';
-              }
-
-              function showSuccess(message) {
-                if (extractionSuccess) {
-                  extractionSuccess.style.display = 'block';
-                  extractionSuccess.innerHTML = message;
-                }
-                if (startedUploadError) startedUploadError.style.display = 'none';
-              }
-
-              function resetForm() {
-                if (fileInput) fileInput.value = '';
-                if (startedUploadError) startedUploadError.style.display = 'none';
-                if (extractionSuccess) extractionSuccess.style.display = 'none';
-                if (uploadProgress) uploadProgress.style.display = 'none';
-                if (uploadedInvoicePreview) uploadedInvoicePreview.style.display = 'none';
-                extractedInvoiceData = null;
-              }
-
-              function escapeHtml(text) {
-                if (!text) return '';
-                const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
-                return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-              }
-
-              function cleanCustomerName(customerName) {
-                if (!customerName) return '';
-                let cleaned = customerName.trim();
-                const patterns = [
-                  /^customer\s*name\s*[:]?\s*/i,
-                  /^customer\s*[:]?\s*/i,
-                  /^name\s*[:]?\s*/i,
-                  /\s*customer\s*name\s*$/i,
-                  /\s*customer\s*$/i
-                ];
-                patterns.forEach(pattern => {
-                  cleaned = cleaned.replace(pattern, '');
-                });
-                return cleaned.replace(/^[:]\s*/, '').replace(/\s*[:]$/, '').replace(/\s+/g, ' ').trim();
-              }
-
-              function cleanExtractedHeader(header) {
-                if (!header) return {};
-                const cleanedHeader = {...header};
-                if (cleanedHeader.customer_name) cleanedHeader.customer_name = cleanCustomerName(cleanedHeader.customer_name);
-                if (cleanedHeader.phone) cleanedHeader.phone = cleanedHeader.phone.replace(/^(phone|tel|telephone|mobile|cell)[\s:]*/i, '').trim();
-                if (cleanedHeader.email) cleanedHeader.email = cleanedHeader.email.replace(/^(email|e-mail|mail)[\s:]*/i, '').trim();
-                if (cleanedHeader.address) cleanedHeader.address = cleanedHeader.address.replace(/^(address|location|addr)[\s:]*/i, '').trim();
-                if (cleanedHeader.invoice_no) cleanedHeader.invoice_no = cleanedHeader.invoice_no.replace(/^(invoice\s*(no|number|#)?[\s:]*)/i, '').trim();
-                return cleanedHeader;
-              }
-
-              function checkExistingCustomer(phone) {
-                if (!phone || phone.length < 5) {
-                  if (existingCustomerAlert) existingCustomerAlert.style.display = 'none';
-                  return;
-                }
-                fetch('/api/customers/check-exists/?phone=' + encodeURIComponent(phone), {
-                  headers: {'X-Requested-With': 'XMLHttpRequest'}
-                })
-                .then(r => r.json())
-                .then(data => {
-                  if (data.exists && data.customer) {
-                    if (existingCustomerAlert && existingCustomerName) {
-                      existingCustomerAlert.style.display = 'block';
-                      existingCustomerName.innerHTML = '<strong>' + escapeHtml(data.customer.full_name) + '</strong>';
-                    }
-                  } else {
-                    if (existingCustomerAlert) existingCustomerAlert.style.display = 'none';
-                  }
-                })
-                .catch(err => {
-                  console.debug('Error checking customer existence:', err);
-                });
-              }
-
-              if (manualCustomerPhone) {
-                manualCustomerPhone.addEventListener('change', function() {
-                  checkExistingCustomer(this.value);
-                });
-              }
-
-              if (uploadBtn) {
-                uploadBtn.addEventListener('click', function() {
-                  resetForm();
-                  const phoneInput = document.getElementById('manualCustomerPhone');
-                  if (phoneInput && phoneInput.value) { try { checkExistingCustomer(phoneInput.value); } catch(e){} }
-                  if (modal) modal.show();
-                });
-              }
-
-              if (startedUploadBtn) {
-                startedUploadBtn.addEventListener('click', async function() {
-                  if (startedUploadError) startedUploadError.style.display = 'none';
-                  if (extractionSuccess) extractionSuccess.style.display = 'none';
-
-                  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-                    showError('<i class="fa fa-warning me-2"></i>Please select a PDF file to upload.');
-                    return;
-                  }
-
-                  const file = fileInput.files[0];
-                  const maxSizeMB = 50;
-                  const maxSizeBytes = maxSizeMB * 1024 * 1024;
-
-                  if (file.size > maxSizeBytes) {
-                    showError(`<i class="fa fa-warning me-2"></i>File is too large. Maximum size is ${maxSizeMB}MB.`);
-                    return;
-                  }
-
-                  if (!file.name.toLowerCase().endsWith('.pdf')) {
-                    showError('<i class="fa fa-warning me-2"></i>Please upload a PDF file.', false);
-                    return;
-                  }
-
-                  const fd = new FormData();
-                  fd.append('file', file);
-                  fd.append('selected_order_id', '{{ order.id }}');
-                  {% if vehicle and vehicle.plate_number %}
-                  fd.append('plate', '{{ vehicle.plate_number }}');
-                  {% endif %}
-
-                  startedUploadBtn.disabled = true;
-                  if (uploadProgress) {
-                    uploadProgress.style.display = 'block';
-                    if (uploadProgressBar) uploadProgressBar.style.width = '50%';
-                  }
-                  const originalBtnText = startedUploadBtn.innerHTML;
-                  startedUploadBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Extracting...';
-
-                  try {
-                    const extractResponse = await fetch('{% url "tracker:api_extract_invoice_preview" %}', {
-                      method: 'POST',
-                      body: fd,
-                      headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': getCSRF()
-                      },
-                      credentials: 'same-origin'
-                    });
-
-                    if (uploadProgressBar) uploadProgressBar.style.width = '100%';
-                    const extractData = await extractResponse.json();
-
-                    if (!extractData.success) {
-                      if (uploadProgress) uploadProgress.style.display = 'none';
-                      const errorMsg = extractData.message || 'Could not extract data from PDF.';
-                      showError(`<i class="fa fa-warning me-2"></i><strong>PDF could not be processed</strong><p class="small mt-2 mb-0">${errorMsg}</p>`, false);
-                      return;
-                    }
-
-                    if (extractData.header) {
-                      extractData.header = cleanExtractedHeader(extractData.header);
-                    }
-
-                    extractedInvoiceData = extractData;
-                    populateManualFormWithExtracted(extractData);
-                    showExtractedDataPreview(extractData.header, extractData.items);
-                    if (uploadProgress) uploadProgress.style.display = 'none';
-                    if (uploadProgressBar) uploadProgressBar.style.width = '0%';
-
-                    showSuccess('Invoice data extracted successfully! The form below has been auto-populated with editable fields.');
-                    if (uploadedInvoicePreview) uploadedInvoicePreview.style.display = 'block';
-
-                  } catch (err) {
-                    console.error('Upload error:', err);
-                    if (uploadProgress) uploadProgress.style.display = 'none';
-                    showError(`<i class="fa fa-exclamation-circle me-2"></i>Upload error: ${err && err.message ? err.message : 'Unknown error'}`);
-                  } finally {
-                    startedUploadBtn.disabled = false;
-                    startedUploadBtn.innerHTML = originalBtnText;
-                  }
-                });
-              }
-
-              function showExtractedDataPreview(header, items) {
-                const elements = {
-                  'previewCustomerName': header.customer_name || '-',
-                  'previewCustomerPhone': header.phone || '-',
-                  'previewCustomerEmail': header.email || '-',
-                  'previewCustomerAddress': header.address || '-',
-                  'previewInvoiceNo': header.invoice_no || '-',
-                  'previewInvoiceDate': header.date || '-',
-                  'previewCodeNo': header.code_no || '-',
-                  'previewReference': header.reference || '-',
-                  'previewSubtotal': (header.subtotal || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}),
-                  'previewTax': (header.tax || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}),
-                  'previewTotal': (header.total || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})
-                };
-
-                Object.keys(elements).forEach(id => {
-                  const el = document.getElementById(id);
-                  if (el) el.textContent = elements[id];
-                });
-
-                if (uploadedInvoicePreview) uploadedInvoicePreview.style.display = 'block';
-                renderExtractedItems(items || []);
-              }
-
-              function populateManualFormWithExtracted(data) {
-                const header = data.header || {};
-
-                if (manualForm) {
-                  const fields = {
-                    'customer_name': header.customer_name,
-                    'customer_phone': header.phone,
-                    'customer_email': header.email,
-                    'customer_address': header.address,
-                    'invoice_number': header.invoice_no || header.code_no,
-                    'code_no': header.code_no,
-                    'reference': header.reference,
-                    'subtotal': header.subtotal,
-                    'tax_amount': header.tax,
-                    'total_amount': header.total
-                  };
-
-                  Object.keys(fields).forEach(name => {
-                    const input = manualForm.querySelector(`input[name="${name}"]`);
-                    if (input && fields[name]) input.value = fields[name];
-                  });
-
-                  const customerTypeField = manualForm.querySelector('select[name="customer_type"]');
-                  if (customerTypeField && header.customer_type) {
-                    customerTypeField.value = header.customer_type;
-                    customerTypeField.dispatchEvent(new Event('change'));
-                  }
-
-                  if (header.date) {
-                    const dateMatch = String(header.date).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-                    const invoiceDateField = manualForm.querySelector('input[name="invoice_date"]');
-                    if (invoiceDateField && dateMatch) {
-                      invoiceDateField.value = dateMatch[3] + '-' + String(dateMatch[2]).padStart(2, '0') + '-' + String(dateMatch[1]).padStart(2, '0');
-                    }
-                  }
-                }
-              }
-
-              function renderExtractedItems(items) {
-                const section = document.getElementById('extractedLineItemsSection');
-                const tbody = document.getElementById('lineItemRowsBody');
-                if (!section || !tbody) return;
-                tbody.innerHTML = '';
-                const list = Array.isArray(items) ? items : [];
-                if (list.length === 0) {
-                  section.style.display = 'block';
-                  addLineItemRow();
-                  return;
-                }
-                list.forEach((it, idx) => {
-                  addLineItemRow(it, idx + 1);
-                });
-                section.style.display = 'block';
-              }
-
-              function addLineItemRow(item, sr) {
-                const tbody = document.getElementById('lineItemRowsBody');
-                if (!tbody) return;
-                const tr = document.createElement('tr');
-                const seq = sr || (tbody.children.length + 1);
-                const code = item && item.code ? item.code : '';
-                const desc = item && item.description ? item.description : '';
-                const unit = item && item.unit ? item.unit : '';
-                const qty = item && item.qty ? item.qty : 1;
-                const rate = item && (item.rate || item.value) ? (item.rate || item.value) : 0;
-                tr.innerHTML = `
-                  <td class="text-center align-middle">${seq}</td>
-                  <td><input type="text" name="item_code[]" class="form-control form-control-sm" value="${escapeHtml(String(code))}"></td>
-                  <td><input type="text" name="item_description[]" class="form-control form-control-sm" value="${escapeHtml(String(desc))}" required></td>
-                  <td><input type="text" name="item_unit[]" class="form-control form-control-sm" value="${escapeHtml(String(unit))}"></td>
-                  <td style="width:100px"><input type="number" name="item_qty[]" class="form-control form-control-sm" min="1" step="1" value="${Number(qty) || 1}" required></td>
-                  <td style="width:140px"><input type="number" name="item_price[]" class="form-control form-control-sm" min="0" step="0.01" value="${Number(rate) || 0}"></td>
-                  <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger remove-line-item">&times;</button></td>
-                `;
-                tbody.appendChild(tr);
-              }
-
-              const addLineItemBtn = document.getElementById('addLineItemRowBtn');
-              if (addLineItemBtn) {
-                addLineItemBtn.addEventListener('click', function(){ addLineItemRow(); });
-              }
-
-              document.addEventListener('click', function(e){
-                const btn = e.target.closest('.remove-line-item');
-                if (!btn) return;
-                const row = btn.closest('tr');
-                if (!row) return;
-                const tbody = document.getElementById('lineItemRowsBody');
-                row.remove();
-                Array.from(tbody.children).forEach((tr, i) => {
-                  const cell = tr.querySelector('td:first-child');
-                  if (cell) cell.textContent = String(i + 1);
-                });
-              });
-
-              if (manualForm) {
-                manualForm.addEventListener('submit', async function(e) {
-                  e.preventDefault();
-
-                  const customerName = this.querySelector('input[name="customer_name"]');
-                  const customerType = this.querySelector('select[name="customer_type"]');
-                  const totalAmount = this.querySelector('input[name="total_amount"]');
-
-                  if (!customerName || !customerName.value.trim() ||
-                      !customerType || !customerType.value.trim() ||
-                      !totalAmount || !totalAmount.value.trim()) {
-                    showError('<i class="fa fa-warning me-2"></i>Please fill in customer name, customer type, and total amount.');
-                    return;
-                  }
-
-                  const fd = new FormData(this);
-                  if (typeof fileInput !== 'undefined' && fileInput && fileInput.files && fileInput.files[0]) {
-                    fd.append('file', fileInput.files[0]);
-                  }
-
-                  const submitBtn = this.querySelector('button[type="submit"]');
-                  const originalBtnText = submitBtn.innerHTML;
-                  submitBtn.disabled = true;
-                  if (uploadProgress) {
-                    uploadProgress.style.display = 'block';
-                    if (uploadProgressBar) uploadProgressBar.style.width = '50%';
-                  }
-
-                  try {
-                    const response = await fetch('{% url "tracker:api_create_invoice_from_upload" %}', {
-                      method: 'POST',
-                      body: fd,
-                      headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': getCSRF()
-                      }
-                    });
-
-                    if (uploadProgressBar) uploadProgressBar.style.width = '100%';
-                    const result = await response.json();
-
-                    if (result.success) {
-                      showSuccess('<i class="fa fa-check-circle me-2"></i>Invoice created successfully! Redirecting...');
-                      setTimeout(function() {
-                        window.location.href = result.redirect_url || ('/tracker/invoices/' + result.invoice_id + '/');
-                      }, 1000);
-                    } else {
-                      showError(`<i class="fa fa-exclamation-circle me-2"></i>${result.message || 'Failed to create invoice'}`);
-                      if (uploadProgress) uploadProgress.style.display = 'none';
-                      if (uploadProgressBar) uploadProgressBar.style.width = '0%';
-                    }
-                  } catch (err) {
-                    console.error('Form submission error:', err);
-                    showError(`<i class="fa fa-exclamation-circle me-2"></i>Error: ${err.message}`);
-                    if (uploadProgress) uploadProgress.style.display = 'none';
-                    if (uploadProgressBar) uploadProgressBar.style.width = '0%';
-                  } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnText;
-                  }
-                });
-              }
-
-              if (modalEl) {
-                modalEl.addEventListener('hidden.bs.modal', function() {
-                  resetForm();
-                });
-              }
-            });
-          </script>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Complete Order Modal - With Signature Capture -->
+  <div class="modal fade" id="completeOrderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="completeOrderForm" method="post" action="{% url 'tracker:complete_order' pk=order.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="complete_order">
+          <input type="hidden" name="signature_data" id="signatureDataInput">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title"><i class="fa fa-pen me-2"></i>Complete Order & Capture Signature</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <!-- Alert when order exceeds 2 hours -->
+            <div id="delayReasonAlert" class="alert alert-warning alert-dismissible fade show" style="display:none;">
+              <i class="fa fa-exclamation-triangle me-2"></i>
+              <strong>Order Exceeds Expected Time</strong>
+              <p class="mb-0 mt-2">This order has exceeded the expected duration. You must select a delay reason before completing.</p>
+            </div>
+
+            <!-- Signature Canvas Section -->
+            <div class="mb-4">
+              <label class="form-label fw-bold text-dark">
+                <i class="fa fa-pen me-2"></i>Customer Signature <span class="text-danger">*</span>
+              </label>
+              <div class="border rounded p-3 bg-light" style="border: 2px solid #dee2e6; cursor: crosshair; min-height: 200px; position: relative;">
+                <canvas id="completionSignaturePad" style="display: block; width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: crosshair;"></canvas>
+              </div>
+              <div class="d-flex gap-2 mt-2">
+                <button type="button" id="clearCompletionSignature" class="btn btn-sm btn-outline-secondary">
+                  <i class="fa fa-eraser me-1"></i>Clear Signature
+                </button>
+                <small class="text-muted ms-auto align-self-center">Use mouse or touch to draw</small>
+              </div>
+            </div>
+
+            <!-- Delay Reason Form -->
+            <div class="mb-3" id="delayReasonSection">
+              <label class="form-label fw-bold text-dark mb-2">
+                <i class="fa fa-exclamation-circle me-2 text-danger"></i><span id="delayReasonLabel">Reason for Delays</span> <span id="delayReasonRequired" class="text-danger" style="display:none;">*</span><small class="fw-normal text-muted" id="delayReasonOptionalText"> (optional)</small>
+              </label>
+
+              <!-- Category Dropdown -->
+              <div class="mb-2">
+                <label class="form-label text-muted small">Category</label>
+                <select id="delayReasonCategory" name="delay_reason_category" class="form-select">
+                  <option value="">-- Select Category --</option>
+                  <option value="parts">Parts-Related Delays</option>
+                  <option value="technical">Technical / Diagnostic Issues</option>
+                  <option value="workload">High Workload / Operational Capacity</option>
+                  <option value="customer">Customer-Related Causes</option>
+                  <option value="administrative">Administrative / System Issues</option>
+                  <option value="quality">Quality-Control & Testing Delays</option>
+                  <option value="external">External / Environmental Factors</option>
+                </select>
+              </div>
+
+              <!-- Specific Reason Dropdown -->
+              <div class="mb-2">
+                <label class="form-label text-muted small">Specific Reason <span id="reasonRequiredBadge" class="badge bg-danger ms-2" style="display:none;">Required</span></label>
+                <select id="delayReasonDropdown" name="delay_reason" class="form-select">
+                  <option value="">-- Select Specific Reason --</option>
+                </select>
+                <div id="selectedReasonDisplay" class="alert alert-info mt-2" style="display:none;">
+                  <i class="fa fa-check-circle me-2"></i>
+                  <strong>Selected:</strong> <span id="selectedReasonText"></span>
+                </div>
+              </div>
+
+              <!-- Custom Comments -->
+              <div>
+                <label class="form-label text-muted small">Additional Comments (optional)</label>
+                <textarea id="delayReasonComments" name="delay_reason_comments" class="form-control form-control-sm" rows="2" placeholder="Add any additional details about the delay..."></textarea>
+              </div>
+
+              <small class="text-muted d-block mt-2">
+                <i class="fa fa-info-circle me-1"></i><span id="delayReasonHelpText">Select the reason if order exceeded 2 hours.</span>
+              </small>
+            </div>
+
+            <div id="delayReasonError" class="alert alert-danger" style="display:none;"></div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success fw-bold">
+              <i class="fa fa-check-circle me-2"></i>Complete Order
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="branchMismatchModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Branch Mismatch</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2">You are viewing an order for <strong>{{ order.branch.name }}</strong> while your branch is <strong>{{ user_branch.name }}</strong>.</p>
+          <p class="mb-0">Proceed only if you intend to work on this cross-branch order.</p>
+        </div>
+        <div class="modal-footer bg-light">
+          <a href="{% url 'tracker:started_orders_dashboard' %}" class="btn btn-outline-secondary">Back to Started Orders</a>
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Upload Modal (Shared/Reusable) -->
+  {% include 'tracker/partials/invoice_upload_modal.html' %}
+
+  <!-- Edit Order Details Modal - FIXED VERSION -->
+  <div class="modal fade" id="editOrderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="fa fa-list me-2"></i>Edit Order Details</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="orderDetailsForm" method="post" action="{% url 'tracker:update_order_details' order.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update_order_details">
+          <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+            <!-- Order Type Selection -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">Order Type</label>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <select id="editOrderType" name="order_type" class="form-select">
+                    <option value="service" {% if order.type == 'service' %}selected{% endif %}>🔧 Service</option>
+                    <option value="sales" {% if order.type == 'sales' %}selected{% endif %}>🛒 Sales (Items)</option>
+                    <option value="labour" {% if order.type == 'labour' %}selected{% endif %}>🛠️ Labour</option>
+                    <option value="inquiry" {% if order.type == 'inquiry' %}selected{% endif %}>❓ Inquiry</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <div class="alert alert-info mb-0 py-2">
+                    <small id="orderTypeInfo">
+                      <i class="fa fa-info-circle me-1"></i>Select appropriate order type
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item Selection for Sales Orders -->
+            <div id="itemSelectionSection" class="mb-4" style="display:none;">
+              <div class="card border-light bg-light">
+                <div class="card-body">
+                  <label class="form-label fw-bold mb-3"><i class="fa fa-shopping-cart me-2"></i>Select Item</label>
+
+                  <!-- Tab-based interface for Labour Code Lookup vs Manual Entry -->
+                  <ul class="nav nav-tabs mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link active" id="labourCodeTab" type="button" role="tab" aria-controls="labourCodePanel" aria-selected="true" data-bs-toggle="tab" data-bs-target="#labourCodePanel">
+                        <i class="fa fa-database me-1"></i>Labour Code
+                      </button>
+                    </li>
+                    <li class="nav-item" id="inventoryTabItem" role="presentation">
+                      <button class="nav-link" id="inventoryTab" type="button" role="tab" aria-controls="inventoryPanel" aria-selected="false" data-bs-toggle="tab" data-bs-target="#inventoryPanel">
+                        <i class="fa fa-box me-1"></i>Inventory
+                      </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link" id="manualEntryTab" type="button" role="tab" aria-controls="manualEntryPanel" aria-selected="false" data-bs-toggle="tab" data-bs-target="#manualEntryPanel">
+                        <i class="fa fa-pen-to-square me-1"></i>Manual Entry
+                      </button>
+                    </li>
+                  </ul>
+
+                  <div class="tab-content">
+                    <!-- Labour Code Lookup Tab -->
+                    <div class="tab-pane fade show active" id="labourCodePanel" role="tabpanel">
+                      <div class="mb-3">
+                        <label class="form-label">Search Labour Code</label>
+                        <input type="text" id="labourCodeSearch" class="form-control" placeholder="Enter labour code or item name...">
+                        <small class="form-text text-muted">Type to search labour codes from database</small>
+                      </div>
+                      <div id="labourCodeResults" class="mb-3" style="display:none;">
+                        <div class="alert alert-info mb-0 py-2">
+                          <small><i class="fa fa-spinner fa-spin me-1"></i>Searching labour codes...</small>
+                        </div>
+                      </div>
+                      <div id="labourCodeSelected" style="display:none;">
+                        <div class="alert alert-success py-2">
+                          <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                              <strong id="labourCodeSelectedName">Item Name</strong><br>
+                              <small>
+                                Code: <span id="labourCodeSelectedCode"></span> •
+                                Brand: <span id="labourCodeSelectedBrand"></span>
+                              </small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="clearLabourCodeBtn">Clear</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input type="hidden" id="labourCodeId" name="labour_code_id">
+                    </div>
+
+                    <!-- Inventory Tab -->
+                    <div class="tab-pane fade" id="inventoryPanel" role="tabpanel">
+                      <div class="mb-3">
+                        <label class="form-label">Select from Inventory</label>
+                        <select id="editOrderItemSelect" name="item_id" class="form-select">
+                          <option value="">Loading items...</option>
+                        </select>
+                        <small class="form-text text-muted">Select existing inventory items</small>
+                      </div>
+                      <div class="row g-2">
+                        <div class="col-md-6">
+                          <label class="form-label">Brand</label>
+                          <input type="text" id="editOrderBrand" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Quantity</label>
+                          <input type="number" id="editOrderQuantity" class="form-control" value="1" min="1">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Manual Entry Tab -->
+                    <div class="tab-pane fade" id="manualEntryPanel" role="tabpanel">
+                      <div class="mb-3">
+                        <label class="form-label">Item Name</label>
+                        <input type="text" id="itemNameManual" name="item_name_manual" class="form-control" placeholder="Enter item name...">
+                      </div>
+                      <div class="row g-2">
+                        <div class="col-md-6">
+                          <label class="form-label">Brand</label>
+                          <input type="text" id="itemBrandManual" name="item_brand_manual" class="form-control" placeholder="Enter brand name...">
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Quantity</label>
+                          <input type="number" id="itemQuantityManual" name="item_quantity" class="form-control" value="1" min="1">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Services/Add-ons Selection -->
+            <div id="servicesSection" class="mb-4" style="display:none;">
+              <div class="card border-light">
+                <div class="card-body">
+                  <label class="form-label fw-bold mb-3">
+                    <i class="fa fa-check-circle me-2"></i>
+                    <span id="servicesLabel">Services</span>
+                  </label>
+                  <div id="editServicesContainer" class="row g-2" style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
+                    <div class="col-12 text-muted text-center py-3">
+                      <small><i class="fa fa-spinner fa-spin me-1"></i>Loading services...</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Duration -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">Estimated Duration (minutes)</label>
+              <input type="number" name="estimated_duration" id="orderEstimatedDuration" class="form-control" value="{{ order.estimated_duration|default:'' }}" min="0" placeholder="0">
+              <small class="text-muted">Auto-calculated based on selected services (optional)</small>
+            </div>
+          </div>
+          <div class="modal-footer bg-light" style="position: sticky; bottom: 0; background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 1rem 2rem; z-index: 10;">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary"><i class="fa fa-save me-2"></i>Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- INLINE STYLES FOR EDIT ORDER DETAILS MODAL -->
+  <style>
+  /* Edit Order Details Modal Styles */
+  #editOrderDetailsModal .modal-dialog {
+      max-width: 900px;
+      margin: 1.75rem auto;
+  }
+  
+  #editOrderDetailsModal .modal-content {
+      border: none;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      border-radius: 12px;
+      overflow: hidden;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+  }
+  
+  #editOrderDetailsModal .modal-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-bottom: none;
+      padding: 1.5rem 2rem;
+      flex-shrink: 0;
+  }
+  
+  #editOrderDetailsModal .modal-title {
+      font-weight: 600;
+      font-size: 1.5rem;
+  }
+  
+  #editOrderDetailsModal .btn-close {
+      filter: invert(1) brightness(2);
+      opacity: 0.8;
+      transition: opacity 0.2s;
+  }
+  
+  #editOrderDetailsModal .btn-close:hover {
+      opacity: 1;
+  }
+  
+  #editOrderDetailsModal .modal-body {
+      padding: 2rem;
+      flex: 1 1 auto;
+      overflow-y: auto;
+  }
+  
+  #editOrderDetailsModal .form-label.fw-bold {
+      color: #2d3748;
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+  }
+  
+  #editOrderDetailsModal .form-select,
+  #editOrderDetailsModal .form-control {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      transition: all 0.3s ease;
+  }
+  
+  #editOrderDetailsModal .form-select:focus,
+  #editOrderDetailsModal .form-control:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  /* Tab Styles */
+  #editOrderDetailsModal .nav-tabs {
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 1.5rem;
+  }
+  
+  #editOrderDetailsModal .nav-tabs .nav-link {
+      border: none;
+      color: #718096;
+      font-weight: 500;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: -2px;
+      transition: all 0.3s ease;
+  }
+  
+  #editOrderDetailsModal .nav-tabs .nav-link:hover {
+      color: #4a5568;
+      background-color: #f7fafc;
+  }
+  
+  #editOrderDetailsModal .nav-tabs .nav-link.active {
+      color: #667eea;
+      background-color: transparent;
+      border-bottom: 3px solid #667eea;
+      font-weight: 600;
+  }
+  
+  /* Service/Labour Code Cards */
+  .service-checkbox-card, .labour-code-checkbox-card {
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      background: white;
+      margin-bottom: 10px;
+      overflow: hidden;
+  }
+  
+  .service-checkbox-card:hover, .labour-code-checkbox-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+      border-color: #667eea;
+  }
+  
+  .service-checkbox-card.selected, .labour-code-checkbox-card.selected {
+      border-color: #667eea;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(102, 126, 234, 0.02) 100%);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.15), inset 0 0 0 2px #667eea;
+  }
+  
+  .service-checkbox-card .card-body, .labour-code-checkbox-card .card-body {
+      padding: 0.75rem;
+      position: relative;
+  }
+  
+  .service-checkbox-card .form-check-input,
+  .labour-code-checkbox-card .form-check-input {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      z-index: 2;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+  }
+  
+  .service-checkbox-card .check-icon,
+  .labour-code-checkbox-card .check-icon {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      color: #10b981;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+  }
+  
+  .service-checkbox-card.selected .check-icon,
+  .labour-code-checkbox-card.selected .check-icon {
+      opacity: 1;
+  }
+  
+  /* Compact Card Content */
+  .service-checkbox-card .card-body .fa-lg,
+  .labour-code-checkbox-card .card-body .fa-lg {
+      font-size: 1rem !important;
+  }
+  
+  .service-checkbox-card h6,
+  .labour-code-checkbox-card h6 {
+      font-size: 0.85rem !important;
+      line-height: 1.3;
+      margin-bottom: 0.2rem !important;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+  }
+  
+  .service-checkbox-card small,
+  .labour-code-checkbox-card small {
+      font-size: 0.75rem !important;
+  }
+  
+  /* Services Container Scroll */
+  #editServicesContainer {
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 10px;
+  }
+  
+  #editServicesContainer::-webkit-scrollbar {
+      width: 6px;
+  }
+  
+  #editServicesContainer::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+  }
+  
+  #editServicesContainer::-webkit-scrollbar-thumb {
+      background: #cbd5e0;
+      border-radius: 4px;
+  }
+  
+  #editServicesContainer::-webkit-scrollbar-thumb:hover {
+      background: #a0aec0;
+  }
+  
+  /* Labour Code Results */
+  #labourCodeResults {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 0.75rem;
+      background: #f8fafc;
+  }
+  
+  #labourCodeResults button {
+      text-align: left;
+      white-space: normal;
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+      width: 100%;
+      background: white;
+      border: 1px solid #e2e8f0;
+      font-size: 0.9rem;
+  }
+  
+  #labourCodeResults button:hover {
+      background-color: #667eea;
+      color: white;
+      transform: translateX(2px);
+      border-color: #667eea;
+  }
+  
+  /* Modal Footer */
+  #editOrderDetailsModal .modal-footer {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      padding: 1rem 2rem;
+      flex-shrink: 0;
+  }
+  
+  #editOrderDetailsModal .modal-footer .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+  }
+  
+  #editOrderDetailsModal .modal-footer .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+  }
+  
+  #editOrderDetailsModal .modal-footer .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  }
+  
+  /* Scrollbar Styling for Modal Body */
+  #editOrderDetailsModal .modal-body::-webkit-scrollbar {
+      width: 8px;
+  }
+  
+  #editOrderDetailsModal .modal-body::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+  }
+  
+  #editOrderDetailsModal .modal-body::-webkit-scrollbar-thumb {
+      background: #cbd5e0;
+      border-radius: 4px;
+  }
+  
+  #editOrderDetailsModal .modal-body::-webkit-scrollbar-thumb:hover {
+      background: #a0aec0;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+      #editOrderDetailsModal .modal-dialog {
+          margin: 0.5rem;
+          max-width: calc(100% - 1rem);
+      }
+      
+      #editOrderDetailsModal .modal-body {
+          padding: 1.5rem;
+      }
+      
+      #editOrderDetailsModal .nav-tabs .nav-link {
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+      }
+      
+      .service-checkbox-card, .labour-code-checkbox-card {
+          margin-bottom: 0.75rem;
+      }
+      
+      #editServicesContainer {
+          max-height: 200px;
+      }
+      
+      #editOrderDetailsModal .modal-footer {
+          padding: 1rem;
+      }
+      
+      #editOrderDetailsModal .modal-footer .btn {
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+      }
+  }
+  </style>
 
   <!-- Tab Navigation -->
   <ul class="nav nav-tabs mb-3" role="tablist">
@@ -1772,7 +941,6 @@ function setEditMode(mode) {
   if (mode === 'customer') {
     document.getElementById('editTitle').textContent = 'Edit Customer Information';
     document.getElementById('customerEditForm').style.display = 'block';
-    // Initialize extra fields visibility when switching to customer form
     if (typeof toggleCustomerExtraFields === 'function') { toggleCustomerExtraFields(); }
   } else if (mode === 'vehicle') {
     document.getElementById('editTitle').textContent = 'Edit Vehicle Information';
@@ -1780,7 +948,6 @@ function setEditMode(mode) {
   }
 }
 
-// Dynamically show/hide fields based on customer type
 function toggleCustomerExtraFields(){
   var sel = document.getElementById('editCustomerType');
   var type = sel ? String(sel.value).toLowerCase() : '';
@@ -1795,20 +962,17 @@ function toggleCustomerExtraFields(){
   if (tax) { if (showOrg) { tax.classList.remove('d-none'); } else { tax.classList.add('d-none'); } }
 }
 
-// Attach change listener once DOM is ready
 document.addEventListener('DOMContentLoaded', function(){
   var sel = document.getElementById('editCustomerType');
   if (sel) {
     sel.addEventListener('change', toggleCustomerExtraFields);
     toggleCustomerExtraFields();
   }
-  // Also wire up when the modal opens, to handle dynamic DOM/visibility
   var editModal = document.getElementById('editDetailsModal');
   if (editModal) {
     editModal.addEventListener('shown.bs.modal', function(){
       var typeSel = document.getElementById('editCustomerType');
       if (typeSel) {
-        // avoid double-binding by removing existing then adding
         typeSel.removeEventListener('change', toggleCustomerExtraFields);
         typeSel.addEventListener('change', toggleCustomerExtraFields);
         toggleCustomerExtraFields();
@@ -1817,46 +981,343 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 });
 
-// Add Item/Service Logic
+// Edit Order Details Modal Initialize and Handle
 document.addEventListener('DOMContentLoaded', function(){
-  const addItemServiceBtn = document.getElementById('addItemServiceBtn');
-  if (addItemServiceBtn) {
-    addItemServiceBtn.addEventListener('click', function(e){
-      e.preventDefault();
-      if (typeof window.extractionFormModal !== 'undefined' && window.extractionFormModal) {
-        // Open the extraction modal
-        window.extractionFormModal.open();
-        // Skip to step 3 (Add Another Item/Service) directly
-        setTimeout(function() {
-          window.extractionFormModal.showStep(3);
-        }, 300);
-      } else {
-        // Fallback: show extraction modal manually
-        const modalEl = document.getElementById('extractionFormModal');
-        if (modalEl) {
-          const modal = new bootstrap.Modal(modalEl);
-          modal.show();
-        }
-      }
+  const editOrderModal = document.getElementById('editOrderDetailsModal');
+  const editOrderTypeEl = document.getElementById('editOrderType');
+  const itemSelectionSection = document.getElementById('itemSelectionSection');
+  const servicesSection = document.getElementById('servicesSection');
+  const servicesLabel = document.getElementById('servicesLabel');
+  const editServicesContainer = document.getElementById('editServicesContainer');
+  const editOrderItemSelect = document.getElementById('editOrderItemSelect');
+  const editOrderBrand = document.getElementById('editOrderBrand');
+  const orderTypeInfo = document.getElementById('orderTypeInfo');
+  const orderDetailsForm = document.getElementById('orderDetailsForm');
+  const labourCodeSearch = document.getElementById('labourCodeSearch');
+  const labourCodeResults = document.getElementById('labourCodeResults');
+  const labourCodeSelected = document.getElementById('labourCodeSelected');
+  const labourCodeId = document.getElementById('labourCodeId');
+  const clearLabourCodeBtn = document.getElementById('clearLabourCodeBtn');
+
+  let allServices = { service_types: [], service_addons: [], inventory_items: [], labour_codes: [] };
+
+  function loadServicesAndItems() {
+    fetch('/tracker/api/orders/service-types/', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      allServices = data;
+      updateOrderTypeUI();
+      populateItemDropdown();
+    })
+    .catch(err => {
+      console.error('Error loading services:', err);
+      editServicesContainer.innerHTML = '<div class="col-12 text-danger"><small>Failed to load services</small></div>';
     });
   }
+
+  function updateOrderTypeUI() {
+    const selectedType = editOrderTypeEl.value;
+    const inventoryTabItem = document.getElementById('inventoryTabItem');
+    const typeInfoMap = {
+      'service': 'Service order - Select labour codes or services to perform',
+      'sales': 'Sales order - Select item/tire to sell',
+      'labour': 'Labour order - Select labour codes for charges',
+      'inquiry': 'Inquiry - Follow-up with customer'
+    };
+    orderTypeInfo.textContent = '✓ ' + (typeInfoMap[selectedType] || 'Select appropriate order type');
+
+    if (selectedType === 'sales') {
+      itemSelectionSection.style.display = 'block';
+      servicesLabel.textContent = 'Add-ons';
+      renderServices(allServices.service_addons || [], 'addon');
+      servicesSection.style.display = 'block';
+      if (inventoryTabItem) inventoryTabItem.style.display = 'none';
+    } else if (selectedType === 'service') {
+      itemSelectionSection.style.display = 'none';
+      servicesLabel.textContent = 'Labour Codes';
+      renderLabourCodes(allServices.labour_codes || [], 'service');
+      servicesSection.style.display = 'block';
+      if (inventoryTabItem) inventoryTabItem.style.display = 'block';
+    } else if (selectedType === 'labour') {
+      itemSelectionSection.style.display = 'none';
+      servicesLabel.textContent = 'Labour Codes';
+      renderLabourCodes(allServices.labour_codes || [], 'labour');
+      servicesSection.style.display = 'block';
+      if (inventoryTabItem) inventoryTabItem.style.display = 'block';
+    } else {
+      itemSelectionSection.style.display = 'none';
+      servicesSection.style.display = 'none';
+      if (inventoryTabItem) inventoryTabItem.style.display = 'block';
+    }
+  }
+
+  function renderServices(services, type) {
+    editServicesContainer.innerHTML = '';
+    if (!services || services.length === 0) {
+      editServicesContainer.innerHTML = '<div class="col-12 text-muted text-center py-3"><small><i class="fa fa-inbox me-2"></i>No ' + (type === 'addon' ? 'add-ons' : 'services') + ' available</small></div>';
+      return;
+    }
+    services.forEach((service, index) => {
+      const col = document.createElement('div');
+      col.className = 'col-md-6 col-lg-4';
+      const checkboxId = `edit_svc_${service.id || service.name.replace(/\s+/g, '_')}`;
+      const icon = type === 'addon' ? 'fa-plus-circle' : 'fa-wrench';
+      const color = type === 'addon' ? '#9b59b6' : '#3498db';
+      const minutes = service.estimated_minutes || 0;
+
+      col.innerHTML = `
+        <div class="service-checkbox-card" data-service-id="${service.id || index}">
+          <div class="card-body">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" id="${checkboxId}" name="services[]" value="${service.id || service.name}" data-name="${service.name}" data-minutes="${minutes}">
+              <label class="form-check-label w-100 mb-0" for="${checkboxId}">
+                <div class="d-flex align-items-center">
+                  <div class="flex-shrink-0 me-2"><i class="fa ${icon}" style="color: ${color}; font-size: 0.9rem;"></i></div>
+                  <div class="flex-grow-1" style="min-width: 0;">
+                    <h6 class="mb-0" title="${service.name}">${service.name}</h6>
+                    ${minutes > 0 ? `<small class="text-muted"><i class="fa fa-clock me-1"></i>${minutes} min</small>` : ''}
+                  </div>
+                </div>
+              </label>
+              <i class="fa fa-check-circle check-icon"></i>
+            </div>
+          </div>
+        </div>
+      `;
+      editServicesContainer.appendChild(col);
+
+      const card = col.querySelector('.service-checkbox-card');
+      const checkbox = col.querySelector('input[type="checkbox"]');
+      card.addEventListener('click', function(e) {
+        if (e.target.type === 'checkbox') return;
+        checkbox.checked = !checkbox.checked;
+        updateCardSelection(card, checkbox.checked);
+      });
+      checkbox.addEventListener('change', function() {
+        updateCardSelection(card, this.checked);
+      });
+    });
+  }
+
+  function renderLabourCodes(labourCodes, type) {
+    editServicesContainer.innerHTML = '';
+    if (!labourCodes || labourCodes.length === 0) {
+      editServicesContainer.innerHTML = '<div class="col-12 text-muted text-center py-3"><small><i class="fa fa-tools me-2"></i>No labour codes available</small></div>';
+      return;
+    }
+    labourCodes.forEach((lc, index) => {
+      const col = document.createElement('div');
+      col.className = 'col-md-6 col-lg-4';
+      const checkboxId = `edit_lc_${lc.id || index}`;
+      let categoryIcon = 'fa-tools';
+      let categoryColor = '#667eea';
+      const category = (lc.category || '').toLowerCase();
+      if (category.includes('labour')) { categoryIcon = 'fa-hammer'; categoryColor = '#e74c3c'; }
+      else if (category.includes('service')) { categoryIcon = 'fa-wrench'; categoryColor = '#3498db'; }
+      else if (category.includes('sales')) { categoryIcon = 'fa-shopping-cart'; categoryColor = '#27ae60'; }
+
+      col.innerHTML = `
+        <div class="labour-code-checkbox-card" data-labour-code-id="${lc.id || index}">
+          <div class="card-body">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" id="${checkboxId}" name="labour_codes[]" value="${lc.id}" data-code="${lc.code}" data-name="${lc.item_name || lc.description}" data-brand="${lc.brand || 'N/A'}">
+              <label class="form-check-label w-100 mb-0" for="${checkboxId}">
+                <div class="d-flex align-items-center">
+                  <div class="flex-shrink-0 me-2"><i class="fa ${categoryIcon}" style="color: ${categoryColor}; font-size: 0.9rem;"></i></div>
+                  <div class="flex-grow-1" style="min-width: 0;">
+                    <h6 class="mb-0" title="${lc.item_name || lc.description}">${lc.item_name || lc.description}</h6>
+                    <small class="text-muted d-block"><strong>Code:</strong> ${lc.code}</small>
+                  </div>
+                </div>
+              </label>
+              <i class="fa fa-check-circle check-icon"></i>
+            </div>
+          </div>
+        </div>
+      `;
+      editServicesContainer.appendChild(col);
+
+      const card = col.querySelector('.labour-code-checkbox-card');
+      const checkbox = col.querySelector('input[type="checkbox"]');
+      card.addEventListener('click', function(e) {
+        if (e.target.type === 'checkbox') return;
+        checkbox.checked = !checkbox.checked;
+        updateCardSelection(card, checkbox.checked);
+      });
+      checkbox.addEventListener('change', function() {
+        updateCardSelection(card, this.checked);
+      });
+    });
+  }
+
+  function updateCardSelection(card, isSelected) {
+    if (isSelected) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  }
+
+  function populateItemDropdown() {
+    const items = allServices.inventory_items || [];
+    editOrderItemSelect.innerHTML = '<option value="">Select item...</option>';
+    items.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = `${item.name} (${item.brand})`;
+      editOrderItemSelect.appendChild(option);
+    });
+  }
+
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  const searchLabourCodes = debounce(function() {
+    const searchTerm = labourCodeSearch.value.trim();
+    if (!searchTerm || searchTerm.length < 2) {
+      labourCodeResults.style.display = 'none';
+      return;
+    }
+    fetch(`/tracker/api/orders/lookup-labour-code/?item_name=${encodeURIComponent(searchTerm)}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.labour_codes && data.labour_codes.length > 0) {
+        labourCodeResults.innerHTML = '';
+        data.labour_codes.forEach(lc => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn btn-light w-100 text-start mb-2 p-2';
+          btn.style.border = '1px solid #e2e8f0';
+          btn.style.borderRadius = '6px';
+          btn.style.fontSize = '0.9rem';
+          btn.innerHTML = `<strong>${lc.item_name || lc.description}</strong><br><small class="text-muted">Code: ${lc.code} • Brand: ${lc.brand || 'N/A'}</small>`;
+          btn.onclick = function(e) { e.preventDefault(); selectLabourCode(lc); };
+          labourCodeResults.appendChild(btn);
+        });
+        labourCodeResults.style.display = 'block';
+      } else {
+        labourCodeResults.innerHTML = `<div class="alert alert-warning mb-0 p-2"><i class="fa fa-search me-2"></i>No labour codes found for "${searchTerm}"</div>`;
+        labourCodeResults.style.display = 'block';
+      }
+    })
+    .catch(error => {
+      console.error('Error searching labour codes:', error);
+      labourCodeResults.innerHTML = `<div class="alert alert-danger mb-0 p-2"><i class="fa fa-exclamation-triangle me-2"></i>Error searching labour codes</div>`;
+      labourCodeResults.style.display = 'block';
+    });
+  }, 500);
+
+  function selectLabourCode(lc) {
+    labourCodeId.value = lc.id;
+    document.getElementById('labourCodeSelectedCode').textContent = lc.code;
+    document.getElementById('labourCodeSelectedName').textContent = lc.item_name || lc.description;
+    document.getElementById('labourCodeSelectedBrand').textContent = lc.brand || 'N/A';
+    labourCodeResults.style.display = 'none';
+    labourCodeSearch.value = lc.item_name || lc.description;
+    labourCodeSelected.style.display = 'block';
+  }
+
+  if (clearLabourCodeBtn) {
+    clearLabourCodeBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      labourCodeId.value = '';
+      labourCodeSearch.value = '';
+      labourCodeSelected.style.display = 'none';
+      labourCodeResults.style.display = 'none';
+    });
+  }
+
+  if (labourCodeSearch) {
+    labourCodeSearch.addEventListener('input', searchLabourCodes);
+  }
+
+  if (editOrderTypeEl) {
+    editOrderTypeEl.addEventListener('change', updateOrderTypeUI);
+  }
+
+  if (orderDetailsForm) {
+    orderDetailsForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const submitBtn = this.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Saving...';
+      submitBtn.disabled = true;
+
+      fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRFToken': getCSRFToken(), 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          alert('Order details updated successfully!');
+          setTimeout(() => {
+            const modal = bootstrap.Modal.getInstance(editOrderModal);
+            if (modal) modal.hide();
+            window.location.reload();
+          }, 500);
+        } else {
+          alert(data.message || 'Failed to update order details.');
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        }
+      })
+      .catch(error => {
+        console.error('Error submitting form:', error);
+        alert('An error occurred. Please try again.');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      });
+    });
+  }
+
+  function getCSRFToken() {
+    const name = 'csrftoken';
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  loadServicesAndItems();
 });
 
-// Signature Pad Initialization
+// Signature Pad and Complete Order Logic
 function initializeSignaturePad() {
   const canvas = document.getElementById('completionSignaturePad');
   if (!canvas) return;
-
   const ctx = canvas.getContext('2d');
   let isDrawing = false;
   let lastX = 0;
   let lastY = 0;
 
-  // Set canvas size to match container
   function resizeCanvas() {
     const container = canvas.parentElement;
     const rect = container.getBoundingClientRect();
-    canvas.width = rect.width - 8; // Subtract padding
+    canvas.width = rect.width - 8;
     canvas.height = 200;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -1882,7 +1343,6 @@ function initializeSignaturePad() {
   function draw(e) {
     if (!isDrawing) return;
     e.preventDefault();
-
     const { x, y } = getCoordinates(e);
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
@@ -1896,18 +1356,14 @@ function initializeSignaturePad() {
     isDrawing = false;
   }
 
-  // Mouse events
   canvas.addEventListener('mousedown', startDrawing);
   canvas.addEventListener('mousemove', draw);
   canvas.addEventListener('mouseup', stopDrawing);
   canvas.addEventListener('mouseleave', stopDrawing);
-
-  // Touch events
   canvas.addEventListener('touchstart', startDrawing, { passive: false });
   canvas.addEventListener('touchmove', draw, { passive: false });
   canvas.addEventListener('touchend', stopDrawing, { passive: false });
 
-  // Clear button
   const clearBtn = document.getElementById('clearCompletionSignature');
   if (clearBtn) {
     clearBtn.addEventListener('click', function(e) {
@@ -1917,7 +1373,6 @@ function initializeSignaturePad() {
   }
 }
 
-// Complete Order Logic with Delay Reason Form
 document.addEventListener('DOMContentLoaded', function(){
   initializeSignaturePad();
   const completeBtn = document.getElementById('completeOrderBtn');
@@ -1927,17 +1382,9 @@ document.addEventListener('DOMContentLoaded', function(){
   const completeOrderForm = document.getElementById('completeOrderForm');
   const delayReasonCategory = document.getElementById('delayReasonCategory');
   const delayReasonDropdown = document.getElementById('delayReasonDropdown');
-  const delayReasonComments = document.getElementById('delayReasonComments');
   const delayReasonAlert = document.getElementById('delayReasonAlert');
   const delayReasonError = document.getElementById('delayReasonError');
-  const delayReasonLabel = document.getElementById('delayReasonLabel');
-  const delayReasonOptionalText = document.getElementById('delayReasonOptionalText');
-  const delayReasonRequired = document.getElementById('delayReasonRequired');
-  const reasonRequiredBadge = document.getElementById('reasonRequiredBadge');
-  const selectedReasonDisplay = document.getElementById('selectedReasonDisplay');
-  const selectedReasonText = document.getElementById('selectedReasonText');
 
-  // Build delay reasons from Django context
   const delayReasonsByCategoryJson = {};
   try {
     const delayReasonsData = {{ delay_reasons_by_category|safe }};
@@ -1964,56 +1411,10 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   }
 
-  function initializeDelayReasonFields() {
-    if (delayReasonCategory && !delayReasonCategory.value) {
-      const firstOption = delayReasonCategory.querySelector('option[value!=""]');
-      if (firstOption) {
-        delayReasonCategory.value = firstOption.value;
-        populateReasons(firstOption.value);
-        if (delayReasonDropdown.options.length > 1) {
-          delayReasonDropdown.selectedIndex = 1;
-        }
-      }
-    }
-
-    if (delayReasonCategory.value) {
-      populateReasons(delayReasonCategory.value);
-    }
-  }
-
-  function updateDelayReasonUI() {
-    if (exceeds9Hours) {
-      delayReasonAlert.style.display = 'block';
-      delayReasonLabel.textContent = 'Reason for Delays';
-      delayReasonOptionalText.style.display = 'none';
-      delayReasonRequired.style.display = 'inline';
-      reasonRequiredBadge.style.display = 'inline-block';
-    } else {
-      delayReasonAlert.style.display = 'none';
-      delayReasonLabel.textContent = 'Reason for Delays';
-      delayReasonOptionalText.style.display = 'inline';
-      delayReasonRequired.style.display = 'none';
-      reasonRequiredBadge.style.display = 'none';
-    }
-  }
-
   if (delayReasonCategory) {
     delayReasonCategory.addEventListener('change', function() {
       populateReasons(this.value);
       delayReasonDropdown.value = '';
-      selectedReasonDisplay.style.display = 'none';
-    });
-  }
-
-  if (delayReasonDropdown) {
-    delayReasonDropdown.addEventListener('change', function() {
-      if (this.value) {
-        const selectedText = this.options[this.selectedIndex].text;
-        selectedReasonText.textContent = selectedText;
-        selectedReasonDisplay.style.display = 'block';
-      } else {
-        selectedReasonDisplay.style.display = 'none';
-      }
     });
   }
 
@@ -2021,11 +1422,8 @@ document.addEventListener('DOMContentLoaded', function(){
     completeOrderForm.addEventListener('submit', function(e) {
       e.preventDefault();
       delayReasonError.style.display = 'none';
-
-      // Capture signature from canvas
       const canvas = document.getElementById('completionSignaturePad');
       const signatureDataInput = document.getElementById('signatureDataInput');
-
       if (canvas) {
         try {
           const signatureDataUrl = canvas.toDataURL('image/png', 0.8);
@@ -2034,609 +1432,28 @@ document.addEventListener('DOMContentLoaded', function(){
           console.warn('Could not capture signature:', err);
         }
       }
-
-      if (exceeds9Hours) {
-        const selectedReason = delayReasonDropdown.value;
-        if (!selectedReason) {
-          delayReasonError.textContent = 'Order has exceeded 2 hours. Please select a delay reason before completing.';
-          delayReasonError.style.display = 'block';
-          return false;
-        }
-      }
-
-      // Submit the form
       completeOrderForm.submit();
     });
   }
 
   completeBtn.addEventListener('click', function(e) {
     e.preventDefault();
-    updateDelayReasonUI();
-    initializeDelayReasonFields();
     if (completeOrderModalEl) {
-      const modal = new bootstrap.Modal(completeOrderModalEl);
-      modal.show();
+      new bootstrap.Modal(completeOrderModalEl).show();
     }
   });
-
-  if (completeOrderModalEl) {
-    completeOrderModalEl.addEventListener('shown.bs.modal', function() {
-      initializeDelayReasonFields();
-      initializeSignaturePad();
-    });
-  }
 });
 
-
-</script>
-
-<!-- Extraction Form Modal JavaScript -->
-<script src="{% static 'js/extraction_form_modal.js' %}"></script>
-
-<script>
-  // Initialize extraction form modal for started orders
-  document.addEventListener('DOMContentLoaded', function() {
-    // Create hidden inputs for extraction modal to access
-    const orderTypeInput = document.createElement('input');
-    orderTypeInput.type = 'hidden';
-    orderTypeInput.name = 'order_type';
-    orderTypeInput.value = '{{ order.type|default:"service" }}';
-    document.body.appendChild(orderTypeInput);
-
-    const orderIdInput = document.createElement('input');
-    orderIdInput.type = 'hidden';
-    orderIdInput.name = 'order_id';
-    orderIdInput.value = '{{ order.id }}';
-    document.body.appendChild(orderIdInput);
-  });
-</script>
-
-<!-- Edit Order Details Modal - Inline CSS (Independent) -->
-<style>
-/* ============================================
-   Edit Order Details Modal - Standalone Styles
-   ============================================ */
-
-/* Modal Container */
-#editOrderDetailsModal {
-  --bs-modal-zindex: 1050 !important;
-}
-
-#editOrderDetailsModal .modal-dialog {
-  max-width: 900px !important;
-  margin: 1.75rem auto !important;
-}
-
-#editOrderDetailsModal .modal-content {
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-  max-height: calc(100vh - 3.5rem);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  opacity: 1 !important;
-  background-color: #ffffff !important;
-  visibility: visible !important;
-}
-
-/* Modal Header */
-#editOrderDetailsModal .modal-header {
-  background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-  color: white;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #dee2e6;
-  flex-shrink: 0;
-}
-
-#editOrderDetailsModal .modal-header .modal-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-#editOrderDetailsModal .btn-close-white {
-  filter: brightness(0) invert(1);
-}
-
-/* Modal Body - Main scrollable area */
-#editOrderDetailsModal .modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-  overflow-x: hidden;
-  flex: 1;
-  min-height: 0;
-}
-
-/* Custom scrollbar */
-#editOrderDetailsModal .modal-body::-webkit-scrollbar {
-  width: 8px;
-}
-
-#editOrderDetailsModal .modal-body::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-#editOrderDetailsModal .modal-body::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-#editOrderDetailsModal .modal-body::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Modal Footer */
-#editOrderDetailsModal .modal-footer {
-  border-top: 1px solid #dee2e6;
-  padding: 1rem 1.5rem;
-  background: #f8f9fa;
-  flex-shrink: 0;
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
-
-/* Form Elements */
-#editOrderDetailsModal .form-label {
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-#editOrderDetailsModal .form-control,
-#editOrderDetailsModal .form-select {
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.95rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-#editOrderDetailsModal .form-control:focus,
-#editOrderDetailsModal .form-select:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-}
-
-/* Alert and Info Messages */
-#editOrderDetailsModal .alert-info {
-  background-color: #cfe2ff;
-  border: 1px solid #b6d4fe;
-  color: #084298;
-  border-radius: 4px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
-  margin-bottom: 0;
-}
-
-/* Card Styles */
-#editOrderDetailsModal .card {
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  background: white;
-  overflow: hidden;
-}
-
-#editOrderDetailsModal .card-body {
-  padding: 1rem;
-}
-
-#editOrderDetailsModal .card.border-light {
-  border: 1px solid #f1f3f4 !important;
-  background: #fafbfc;
-}
-
-#editOrderDetailsModal .card.border-light.bg-light {
-  background: #f8f9fa;
-}
-
-/* Tabs */
-#editOrderDetailsModal .nav-tabs {
-  border-bottom: 2px solid #dee2e6;
-  margin-bottom: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-}
-
-#editOrderDetailsModal .nav-item {
-  margin-right: -1px;
-}
-
-#editOrderDetailsModal .nav-link {
-  border: 1px solid transparent;
-  border-bottom: 2px solid transparent;
-  color: #6c757d;
-  padding: 0.5rem 1rem;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-
-#editOrderDetailsModal .nav-link:hover {
-  border-bottom-color: #0d6efd;
-  color: #0d6efd;
-}
-
-#editOrderDetailsModal .nav-link.active {
-  border-bottom-color: #0d6efd;
-  color: #0d6efd;
-  background: transparent;
-}
-
-#editOrderDetailsModal .tab-content {
-  border: none;
-}
-
-#editOrderDetailsModal .tab-pane {
-  padding: 0;
-}
-
-/* Labour Codes and Services Grid */
-#editOrderDetailsModal #editServicesContainer {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-  max-height: none;
-  overflow-y: visible;
-}
-
-/* Labour Code and Service Cards */
-#editOrderDetailsModal .labour-code-card,
-#editOrderDetailsModal .service-card {
-  position: relative;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  background: white;
-  padding: 1rem;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  min-height: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-#editOrderDetailsModal .labour-code-card:hover,
-#editOrderDetailsModal .service-card:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
-}
-
-#editOrderDetailsModal .labour-code-card.selected,
-#editOrderDetailsModal .service-card.selected {
-  border-color: #0d6efd;
-  border-width: 2px;
-  background-color: #f0f4ff;
-  box-shadow: 0 4px 14px rgba(13, 110, 253, 0.4);
-}
-
-#editOrderDetailsModal .labour-code-card .fa,
-#editOrderDetailsModal .service-card .fa {
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
-}
-
-/* Visible check icon */
-#editOrderDetailsModal .labour-code-card i.fa-check-circle,
-#editOrderDetailsModal .service-card i.fa-check-circle {
-  position: absolute;
-  right: 0.75rem;
-  top: 0.75rem;
-  font-size: 1.5rem;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  color: #27ae60;
-}
-
-#editOrderDetailsModal .labour-code-card.selected i.fa-check-circle,
-#editOrderDetailsModal .service-card.selected i.fa-check-circle {
-  opacity: 1;
-}
-
-/* Hidden Checkboxes */
-#editOrderDetailsModal .form-check-input,
-#editOrderDetailsModal .edit-labour-code-checkbox,
-#editOrderDetailsModal .edit-service-checkbox {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  cursor: pointer;
-  margin: 0;
-  padding: 0;
-  z-index: -1;
-}
-
-/* Buttons */
-#editOrderDetailsModal .btn {
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-#editOrderDetailsModal .btn-primary {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-}
-
-#editOrderDetailsModal .btn-primary:hover {
-  background-color: #0b5ed7;
-  border-color: #0a58ca;
-}
-
-#editOrderDetailsModal .btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  color: white;
-}
-
-#editOrderDetailsModal .btn-secondary:hover {
-  background-color: #5c636a;
-  border-color: #565e64;
-}
-
-/* Modal Backdrop */
-#editOrderDetailsModal + .modal-backdrop {
-  opacity: 0.3 !important;
-  background-color: #000 !important;
-  pointer-events: auto !important;
-}
-
-.modal-backdrop.show {
-  opacity: 0.3 !important;
-  pointer-events: auto !important;
-}
-
-/* Ensure modal content is interactive */
-#editOrderDetailsModal .modal-dialog {
-  pointer-events: auto !important;
-}
-
-#editOrderDetailsModal .modal-content {
-  pointer-events: auto !important;
-}
-
-/* Ensure all buttons and form elements are clickable */
-#editOrderDetailsModal .btn,
-#editOrderDetailsModal .form-control,
-#editOrderDetailsModal .form-select,
-#editOrderDetailsModal button,
-#editOrderDetailsModal input,
-#editOrderDetailsModal select,
-#editOrderDetailsModal textarea {
-  pointer-events: auto !important;
-}
-
-/* Ensure buttons are not disabled */
-#editOrderDetailsModal button:not(:disabled),
-#editOrderDetailsModal .btn:not(:disabled),
-#editOrderDetailsModal [type="submit"]:not(:disabled) {
-  pointer-events: auto !important;
-  cursor: pointer !important;
-}
-
-#editOrderDetailsModal button[disabled],
-#editOrderDetailsModal .btn[disabled] {
-  pointer-events: auto !important;
-}
-
-/* Ensure tab and other interactive elements work */
-#editOrderDetailsModal [tabindex],
-#editOrderDetailsModal [role="button"],
-#editOrderDetailsModal [role="tab"] {
-  pointer-events: auto !important;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  #editOrderDetailsModal .modal-dialog {
-    margin: 0.5rem auto !important;
-    width: calc(100% - 1rem) !important;
-  }
-
-  #editOrderDetailsModal .modal-content {
-    max-height: calc(100vh - 1rem);
-    border-radius: 6px;
-  }
-
-  #editOrderDetailsModal .modal-body {
-    padding: 1rem;
-  }
-
-  #editOrderDetailsModal .modal-footer {
-    padding: 0.75rem 1rem;
-    flex-direction: column;
-  }
-
-  #editOrderDetailsModal .modal-footer .btn {
-    width: 100%;
-  }
-
-  #editOrderDetailsModal .modal-footer .btn:not(:last-child) {
-    margin-bottom: 0.5rem;
-  }
-
-  #editOrderDetailsModal #editServicesContainer {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 0.75rem;
-  }
-}
-
-/* Modal Entrance Animation */
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-#editOrderDetailsModal.show .modal-dialog {
-  animation: modalSlideIn 0.3s ease-out;
-}
-
-@media print {
-  #editOrderDetailsModal {
-    display: none !important;
-  }
-}
-</style>
-
-<!-- Edit Order Details Modal - Inline JavaScript (Independent) -->
-<script>
-(function() {
-  'use strict';
-
-  document.addEventListener('DOMContentLoaded', function() {
-    initializeEditOrderModal();
-  });
-
-  function initializeEditOrderModal() {
-    const editModal = document.getElementById('editOrderDetailsModal');
-
-    if (!editModal) {
-      console.warn('Edit Order Details Modal not found');
-      return;
+// Branch Mismatch Modal
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    var mismatch = {{ branch_mismatch|yesno:'true,false' }};
+    if (mismatch) {
+      var bmEl = document.getElementById('branchMismatchModal');
+      if (bmEl) { new bootstrap.Modal(bmEl).show(); }
     }
-
-    editModal.addEventListener('show.bs.modal', function() {
-      handleModalShow();
-    });
-
-    editModal.addEventListener('hide.bs.modal', function() {
-      handleModalHide();
-    });
-
-    window.addEventListener('resize', function() {
-      if (editModal.classList.contains('show')) {
-        adjustModalHeight();
-      }
-    });
-  }
-
-  function handleModalShow() {
-    const editModal = document.getElementById('editOrderDetailsModal');
-    const modalBody = editModal.querySelector('.modal-body');
-
-    if (modalBody) {
-      modalBody.style.maxHeight = '';
-      modalBody.style.minHeight = '';
-      void editModal.offsetHeight;
-      adjustModalHeight();
-      modalBody.scrollTop = 0;
-    }
-
-    enableAllInteractiveElements(editModal);
-  }
-
-  function handleModalHide() {
-    const editModal = document.getElementById('editOrderDetailsModal');
-    const modalBody = editModal.querySelector('.modal-body');
-
-    if (modalBody) {
-      modalBody.style.maxHeight = '';
-      modalBody.style.minHeight = '';
-    }
-  }
-
-  function adjustModalHeight() {
-    const editModal = document.getElementById('editOrderDetailsModal');
-    const modalContent = editModal.querySelector('.modal-content');
-    const modalHeader = editModal.querySelector('.modal-header');
-    const modalFooter = editModal.querySelector('.modal-footer');
-    const modalBody = editModal.querySelector('.modal-body');
-
-    if (!modalBody || !modalContent) return;
-
-    const viewportHeight = window.innerHeight;
-    const headerHeight = modalHeader ? modalHeader.offsetHeight : 60;
-    const footerHeight = modalFooter ? modalFooter.offsetHeight : 60;
-    const padding = 32;
-
-    const availableHeight = viewportHeight - headerHeight - footerHeight - padding;
-
-    if (modalBody.scrollHeight > availableHeight && availableHeight > 200) {
-      modalBody.style.maxHeight = availableHeight + 'px';
-    }
-  }
-
-  window.showEditOrderModal = function() {
-    const editModal = document.getElementById('editOrderDetailsModal');
-    if (editModal) {
-      const bsModal = new bootstrap.Modal(editModal);
-      bsModal.show();
-    }
-  };
-
-  window.hideEditOrderModal = function() {
-    const editModal = document.getElementById('editOrderDetailsModal');
-    if (editModal) {
-      const bsModal = bootstrap.Modal.getInstance(editModal);
-      if (bsModal) {
-        bsModal.hide();
-      }
-    }
-  };
-
-  window.ensureCardContentVisible = function() {
-    const editModal = document.getElementById('editOrderDetailsModal');
-    if (!editModal || !editModal.classList.contains('show')) return;
-
-    const cards = editModal.querySelectorAll('.labour-code-card, .service-card');
-    cards.forEach(function(card) {
-      card.style.minHeight = 'auto';
-      card.style.maxHeight = 'none';
-
-      const textElements = card.querySelectorAll('*');
-      textElements.forEach(function(el) {
-        el.style.display = '';
-        el.style.visibility = 'visible';
-        el.style.opacity = '1';
-      });
-    });
-  };
-
-  function enableAllInteractiveElements(modal) {
-    if (!modal) return;
-
-    const buttons = modal.querySelectorAll('button, [role="button"]');
-    buttons.forEach(function(btn) {
-      btn.disabled = false;
-      btn.removeAttribute('disabled');
-      btn.style.pointerEvents = 'auto';
-      btn.style.cursor = 'pointer';
-    });
-
-    const inputs = modal.querySelectorAll('input, select, textarea');
-    inputs.forEach(function(input) {
-      input.disabled = false;
-      input.removeAttribute('disabled');
-      input.style.pointerEvents = 'auto';
-      input.style.cursor = 'pointer';
-    });
-
-    const modalDialog = modal.querySelector('.modal-dialog');
-    const modalContent = modal.querySelector('.modal-content');
-
-    if (modalDialog) {
-      modalDialog.style.pointerEvents = 'auto';
-    }
-    if (modalContent) {
-      modalContent.style.pointerEvents = 'auto';
-    }
-  }
-})();
+  } catch(e){}
+});
 </script>
 
 {% endblock %}
