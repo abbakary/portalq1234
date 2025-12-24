@@ -820,6 +820,14 @@
               <label class="form-label fw-medium text-muted"><i class="fa fa-circle me-2"></i>Tire Type</label>
               <div class="p-3 border rounded" style="background-color: #f8f9fa;">{{ order.tire_type|default:'-' }}</div>
             </div>
+            {% if order.estimated_duration %}
+            <div class="col-md-6">
+              <label class="form-label fw-medium text-muted"><i class="fa fa-hourglass me-2"></i>Estimated Duration</label>
+              <div class="p-3 border rounded" style="background-color: #f8f9fa;">
+                {{ order.estimated_duration }} minute{% if order.estimated_duration != 1 %}s{% endif %}
+              </div>
+            </div>
+            {% endif %}
           </div>
         </div>
       </div>
