@@ -3236,29 +3236,40 @@ def order_delete(request: HttpRequest, pk: int):
     """Delete an order"""
     order = get_object_or_404(Order, pk=pk)
     customer = order.customer
-    
+
     if request.method == 'POST':
+        order_number = order.order_number
+
         try:
-            # Log the deletion before actually deleting
-            add_audit_log(
-                request.user,
-                'order_deleted',
-                f'Deleted order {order.order_number} for customer {customer.full_name}',
-                order_id=order.id,
-                customer_id=customer.id
-            )
-        except Exception:
-            pass
-            
-        order.delete()
-        messages.success(request, f'Order {order.order_number} has been deleted.')
-        
-        # Redirect based on the 'next' parameter or to customer detail
-        next_url = request.POST.get('next', None)
-        if next_url:
-            return redirect(next_url)
-        return redirect('tracker:customer_detail', pk=customer.id)
-    
+            # Attempt to delete the order
+            order.delete()
+
+            # Log the deletion after successful deletion
+            try:
+                add_audit_log(
+                    request.user,
+                    'order_deleted',
+                    f'Deleted order {order_number} for customer {customer.full_name}',
+                    order_id=order.id,
+                    customer_id=customer.id
+                )
+            except Exception:
+                pass
+
+            messages.success(request, f'Order {order_number} has been successfully deleted.')
+
+            # Redirect based on the 'next' parameter or to customer detail
+            next_url = request.POST.get('next', None)
+            if next_url:
+                return redirect(next_url)
+            return redirect('tracker:customer_detail', pk=customer.id)
+
+        except ProtectedError:
+            # Handle foreign key constraint violations
+            error_msg = f'Cannot delete order "{order_number}" because it is referenced by other records. Please contact your system administrator.'
+            messages.error(request, error_msg)
+            return redirect('tracker:order_detail', pk=order.id)
+
     # If not a POST request, redirect to order detail
     return redirect('tracker:order_detail', pk=order.id)
 
