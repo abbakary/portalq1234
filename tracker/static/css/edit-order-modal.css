@@ -1,0 +1,372 @@
+/* Edit Order Details Modal - Isolated Styles */
+
+/* Modal Container - Ensure full visibility */
+#editOrderDetailsModal {
+  --bs-modal-zindex: 1050 !important;
+}
+
+#editOrderDetailsModal .modal-dialog {
+  max-width: 800px !important;
+  margin: 1.75rem auto !important;
+}
+
+#editOrderDetailsModal .modal-content {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#editOrderDetailsModal .modal-header {
+  background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+  flex-shrink: 0;
+}
+
+#editOrderDetailsModal .modal-header .modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#editOrderDetailsModal .btn-close-white {
+  filter: brightness(0) invert(1);
+}
+
+/* Modal Body - Scrollable content */
+#editOrderDetailsModal .modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: auto;
+}
+
+/* Ensure proper scrolling */
+#editOrderDetailsModal .modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+#editOrderDetailsModal .modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+#editOrderDetailsModal .modal-body::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+#editOrderDetailsModal .modal-body::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Modal Footer */
+#editOrderDetailsModal .modal-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+  flex-shrink: 0;
+}
+
+/* Form Elements */
+#editOrderDetailsModal .form-label {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+#editOrderDetailsModal .form-control,
+#editOrderDetailsModal .form-select {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#editOrderDetailsModal .form-control:focus,
+#editOrderDetailsModal .form-select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Order Type Section */
+#editOrderDetailsModal .mb-4 {
+  margin-bottom: 1.5rem;
+}
+
+#editOrderDetailsModal .alert-info {
+  background-color: #cfe2ff;
+  border: 1px solid #b6d4fe;
+  color: #084298;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+/* Item Selection Card */
+#editOrderDetailsModal .card {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: white;
+  overflow: hidden;
+}
+
+#editOrderDetailsModal .card-body {
+  padding: 1rem;
+}
+
+#editOrderDetailsModal .card.border-light {
+  border: 1px solid #f1f3f4 !important;
+  background: #fafbfc;
+}
+
+#editOrderDetailsModal .card.border-light.bg-light {
+  background: #f8f9fa;
+}
+
+/* Tabs */
+#editOrderDetailsModal .nav-tabs {
+  border-bottom: 2px solid #dee2e6;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+#editOrderDetailsModal .nav-item {
+  margin-right: -1px;
+}
+
+#editOrderDetailsModal .nav-link {
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  color: #6c757d;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+#editOrderDetailsModal .nav-link:hover {
+  border-bottom-color: #0d6efd;
+  color: #0d6efd;
+}
+
+#editOrderDetailsModal .nav-link.active {
+  border-bottom-color: #0d6efd;
+  color: #0d6efd;
+  background: transparent;
+}
+
+/* Tab Content */
+#editOrderDetailsModal .tab-content {
+  border: none;
+}
+
+#editOrderDetailsModal .tab-pane {
+  padding: 0;
+}
+
+/* Services/Labour Codes Container */
+#editOrderDetailsModal #editServicesContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+@media (min-width: 768px) {
+  #editOrderDetailsModal #editServicesContainer {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+/* Labour Code and Service Cards - Responsive */
+#editOrderDetailsModal .labour-code-card,
+#editOrderDetailsModal .service-card {
+  position: relative;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+}
+
+#editOrderDetailsModal .labour-code-card:hover,
+#editOrderDetailsModal .service-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+#editOrderDetailsModal .labour-code-card.selected,
+#editOrderDetailsModal .service-card.selected {
+  border-color: #0d6efd;
+  border-width: 2px;
+  background-color: #f0f4ff;
+  box-shadow: 0 4px 14px rgba(13, 110, 253, 0.4), inset 0 0 0 2px #0d6efd;
+}
+
+#editOrderDetailsModal .labour-code-card .card-body,
+#editOrderDetailsModal .service-card .card-body {
+  padding: 0;
+}
+
+/* Icon styling in cards */
+#editOrderDetailsModal .labour-code-card .fa,
+#editOrderDetailsModal .service-card .fa {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Check icon */
+#editOrderDetailsModal .labour-code-card i.fa-check-circle,
+#editOrderDetailsModal .service-card i.fa-check-circle {
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+  font-size: 1.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: #27ae60;
+}
+
+#editOrderDetailsModal .labour-code-card.selected i.fa-check-circle,
+#editOrderDetailsModal .service-card.selected i.fa-check-circle {
+  opacity: 1;
+}
+
+/* Form Checkbox - Hidden but accessible */
+#editOrderDetailsModal .form-check-input,
+#editOrderDetailsModal .edit-labour-code-checkbox,
+#editOrderDetailsModal .edit-service-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  z-index: 1;
+}
+
+#editOrderDetailsModal .form-check-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Buttons */
+#editOrderDetailsModal .btn {
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+#editOrderDetailsModal .btn:hover {
+  transform: translateY(-1px);
+}
+
+#editOrderDetailsModal .btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+#editOrderDetailsModal .btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+#editOrderDetailsModal .btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+#editOrderDetailsModal .btn-secondary:hover {
+  background-color: #5c636a;
+  border-color: #565e64;
+}
+
+/* Modal Backdrop */
+.modal-backdrop.fade {
+  opacity: 0.5;
+  background-color: #000;
+}
+
+.modal-backdrop.fade.show {
+  opacity: 0.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  #editOrderDetailsModal .modal-dialog {
+    margin: 0.5rem !important;
+    width: calc(100% - 1rem) !important;
+  }
+
+  #editOrderDetailsModal .modal-content {
+    max-height: 95vh;
+  }
+
+  #editOrderDetailsModal .modal-body {
+    padding: 1rem;
+  }
+
+  #editOrderDetailsModal .modal-footer {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+  }
+
+  #editOrderDetailsModal .btn {
+    width: 100%;
+  }
+
+  #editOrderDetailsModal .btn:not(:last-child) {
+    margin-bottom: 0.5rem;
+  }
+
+  #editOrderDetailsModal #editServicesContainer {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+    max-height: 300px;
+  }
+}
+
+/* Animation for modal entrance */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#editOrderDetailsModal.show .modal-dialog {
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Print styles */
+@media print {
+  #editOrderDetailsModal {
+    display: none !important;
+  }
+}
