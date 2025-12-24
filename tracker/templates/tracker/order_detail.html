@@ -858,6 +858,14 @@
                 <div class="p-3 border rounded" style="background-color: #f8f9fa;">{{ order.questions|default:"No further details provided" }}</div>
               </div>
             </div>
+            {% if order.follow_up_date %}
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-medium text-muted"><i class="fa fa-calendar me-2"></i>Follow-up Date</label>
+                <div class="p-3 border rounded" style="background-color: #f8f9fa;">{{ order.follow_up_date|date:"M d, Y" }}</div>
+              </div>
+            </div>
+            {% endif %}
             {% if order.description %}
             <div class="col-12">
               <div class="mb-3">
