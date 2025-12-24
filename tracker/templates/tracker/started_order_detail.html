@@ -522,17 +522,93 @@
                       <div class="card border-light bg-light">
                         <div class="card-body">
                           <label class="form-label fw-bold mb-3"><i class="fa fa-shopping-cart me-2"></i>Select Item</label>
-                          <select id="editOrderItemSelect" name="item_id" class="form-select mb-3">
-                            <option value="">Loading items...</option>
-                          </select>
-                          <div class="row g-2">
-                            <div class="col-md-6">
-                              <label class="form-label">Brand</label>
-                              <input type="text" id="editOrderBrand" name="item_brand" class="form-control" readonly>
+
+                          <!-- Tab-based interface for Labour Code Lookup vs Manual Entry -->
+                          <ul class="nav nav-tabs mb-3" role="tablist">
+                            <li class="nav-item" role="presentation">
+                              <button class="nav-link active" id="labourCodeTab" type="button" role="tab" aria-controls="labourCodePanel" aria-selected="true" data-bs-toggle="tab" data-bs-target="#labourCodePanel">
+                                <i class="fa fa-database me-1"></i>Labour Code
+                              </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                              <button class="nav-link" id="inventoryTab" type="button" role="tab" aria-controls="inventoryPanel" aria-selected="false" data-bs-toggle="tab" data-bs-target="#inventoryPanel">
+                                <i class="fa fa-box me-1"></i>Inventory
+                              </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                              <button class="nav-link" id="manualEntryTab" type="button" role="tab" aria-controls="manualEntryPanel" aria-selected="false" data-bs-toggle="tab" data-bs-target="#manualEntryPanel">
+                                <i class="fa fa-pen-to-square me-1"></i>Manual Entry
+                              </button>
+                            </li>
+                          </ul>
+
+                          <div class="tab-content">
+                            <!-- Labour Code Lookup Tab -->
+                            <div class="tab-pane fade show active" id="labourCodePanel" role="tabpanel">
+                              <div class="mb-3">
+                                <label class="form-label">Search Labour Code</label>
+                                <input type="text" id="labourCodeSearch" class="form-control" placeholder="Enter labour code or item name...">
+                                <small class="form-text text-muted">Type to search labour codes from database</small>
+                              </div>
+                              <div id="labourCodeResults" class="mb-3" style="display:none;">
+                                <div class="alert alert-info mb-0 py-2">
+                                  <small><i class="fa fa-spinner fa-spin me-1"></i>Searching labour codes...</small>
+                                </div>
+                              </div>
+                              <div id="labourCodeSelected" style="display:none;">
+                                <div class="alert alert-success py-2">
+                                  <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                      <strong id="labourCodeSelectedName">Item Name</strong><br>
+                                      <small>
+                                        Code: <span id="labourCodeSelectedCode"></span> •
+                                        Brand: <span id="labourCodeSelectedBrand"></span>
+                                      </small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="clearLabourCodeBtn">Clear</button>
+                                  </div>
+                                </div>
+                              </div>
+                              <input type="hidden" id="labourCodeId" name="labour_code_id">
                             </div>
-                            <div class="col-md-6">
-                              <label class="form-label">Quantity</label>
-                              <input type="number" id="editOrderQuantity" name="item_quantity" class="form-control" value="1" min="1">
+
+                            <!-- Inventory Tab -->
+                            <div class="tab-pane fade" id="inventoryPanel" role="tabpanel">
+                              <div class="mb-3">
+                                <label class="form-label">Select from Inventory</label>
+                                <select id="editOrderItemSelect" name="item_id" class="form-select">
+                                  <option value="">Loading items...</option>
+                                </select>
+                                <small class="form-text text-muted">Select existing inventory items</small>
+                              </div>
+                              <div class="row g-2">
+                                <div class="col-md-6">
+                                  <label class="form-label">Brand</label>
+                                  <input type="text" id="editOrderBrand" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                  <label class="form-label">Quantity</label>
+                                  <input type="number" id="editOrderQuantity" class="form-control" value="1" min="1">
+                                </div>
+                              </div>
+                            </div>
+
+                            <!-- Manual Entry Tab -->
+                            <div class="tab-pane fade" id="manualEntryPanel" role="tabpanel">
+                              <div class="mb-3">
+                                <label class="form-label">Item Name</label>
+                                <input type="text" id="itemNameManual" name="item_name_manual" class="form-control" placeholder="Enter item name...">
+                              </div>
+                              <div class="row g-2">
+                                <div class="col-md-6">
+                                  <label class="form-label">Brand</label>
+                                  <input type="text" id="itemBrandManual" name="item_brand_manual" class="form-control" placeholder="Enter brand name...">
+                                </div>
+                                <div class="col-md-6">
+                                  <label class="form-label">Quantity</label>
+                                  <input type="number" id="itemQuantityManual" name="item_quantity" class="form-control" value="1" min="1">
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
