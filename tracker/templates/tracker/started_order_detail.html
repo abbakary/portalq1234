@@ -604,6 +604,131 @@
               updateCustomerTypeFields();
             }
 
+            // Edit Order Details - Handle order type change and dynamic services
+            document.addEventListener('DOMContentLoaded', function(){
+              const editOrderTypeEl = document.getElementById('editOrderType');
+              const itemSelectionSection = document.getElementById('itemSelectionSection');
+              const servicesSection = document.getElementById('servicesSection');
+              const servicesLabel = document.getElementById('servicesLabel');
+              const editServicesContainer = document.getElementById('editServicesContainer');
+              const editOrderItemSelect = document.getElementById('editOrderItemSelect');
+              const editOrderBrand = document.getElementById('editOrderBrand');
+              const editOrderQuantity = document.getElementById('editOrderQuantity');
+              const orderTypeInfo = document.getElementById('orderTypeInfo');
+
+              let allServices = { service_types: [], service_addons: [], inventory_items: [] };
+
+              // Load services and items from API
+              function loadServicesAndItems() {
+                fetch('/tracker/api/orders/service-types/', {
+                  headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                  allServices = data;
+                  updateOrderTypeUI();
+                })
+                .catch(err => {
+                  console.error('Error loading services:', err);
+                  editServicesContainer.innerHTML = '<div class="col-12 text-danger"><small>Failed to load services</small></div>';
+                });
+              }
+
+              // Update UI based on selected order type
+              function updateOrderTypeUI() {
+                const selectedType = editOrderTypeEl.value;
+
+                // Update info text
+                const typeInfoMap = {
+                  'service': 'Service order - Select services to perform',
+                  'sales': 'Sales order - Select item/tire to sell',
+                  'labour': 'Labour order - Manual labor charges',
+                  'inquiry': 'Inquiry - Follow-up with customer'
+                };
+                orderTypeInfo.textContent = '✓ ' + (typeInfoMap[selectedType] || 'Select appropriate order type');
+
+                // Show/hide sections based on order type
+                if (selectedType === 'sales') {
+                  itemSelectionSection.style.display = 'block';
+                  servicesLabel.textContent = 'Add-ons';
+                  renderEditServices(allServices.service_addons, 'addon');
+                  servicesSection.style.display = 'block';
+                } else if (selectedType === 'service') {
+                  itemSelectionSection.style.display = 'none';
+                  servicesLabel.textContent = 'Services';
+                  renderEditServices(allServices.service_types, 'service');
+                  servicesSection.style.display = 'block';
+                } else {
+                  itemSelectionSection.style.display = 'none';
+                  servicesSection.style.display = 'none';
+                }
+              }
+
+              // Render services/add-ons as checkboxes
+              function renderEditServices(services, type) {
+                editServicesContainer.innerHTML = '';
+                if (!services || services.length === 0) {
+                  editServicesContainer.innerHTML = '<div class="col-12 text-muted text-center py-3"><small>No ' + (type === 'addon' ? 'add-ons' : 'services') + ' available</small></div>';
+                  return;
+                }
+
+                services.forEach(service => {
+                  const col = document.createElement('div');
+                  col.className = 'col-md-6';
+                  const minutesHtml = service.estimated_minutes ? ` <span class="badge bg-light text-dark ms-1">${service.estimated_minutes} min</span>` : '';
+                  col.innerHTML = `
+                    <div class="form-check">
+                      <input class="form-check-input edit-service-checkbox" type="checkbox"
+                             id="edit_svc_${service.id || service.name.replace(/\s+/g, '_')}"
+                             name="services"
+                             value="${service.name}">
+                      <label class="form-check-label" for="edit_svc_${service.id || service.name.replace(/\s+/g, '_')}">
+                        ${service.name}${minutesHtml}
+                      </label>
+                    </div>
+                  `;
+                  editServicesContainer.appendChild(col);
+                });
+              }
+
+              // Populate item dropdown
+              function populateItemDropdown() {
+                const items = allServices.inventory_items || [];
+                editOrderItemSelect.innerHTML = '<option value="">Select item...</option>';
+
+                items.forEach(item => {
+                  const option = document.createElement('option');
+                  option.value = item.id;
+                  option.textContent = `${item.name} (${item.brand}) - ${item.quantity} in stock @ $${item.price}`;
+                  editOrderItemSelect.appendChild(option);
+                });
+              }
+
+              // Handle item selection change
+              editOrderItemSelect.addEventListener('change', function(e) {
+                const itemId = e.target.value;
+                if (itemId) {
+                  const item = allServices.inventory_items.find(i => i.id == itemId);
+                  if (item) {
+                    editOrderBrand.value = item.brand || 'Unbranded';
+                  }
+                } else {
+                  editOrderBrand.value = '';
+                }
+              });
+
+              // Handle order type change
+              editOrderTypeEl.addEventListener('change', function() {
+                updateOrderTypeUI();
+                if (this.value === 'sales') {
+                  populateItemDropdown();
+                }
+              });
+
+              // Initial load and setup
+              loadServicesAndItems();
+            });
+
             // Modal and form handling
             document.addEventListener('DOMContentLoaded', function(){
               if (typeof getCSRFToken !== 'function') {
