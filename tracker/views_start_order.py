@@ -815,11 +815,32 @@ def api_update_order_from_extraction(request):
                                 order.description = (order.description or '') + component_desc
                                 order.save()
 
+        # Build detailed success message with what was updated
+        updates = [f"Order #{order.order_number} updated successfully"]
+
+        if customer_name:
+            updates.append(f"Customer: {customer_name}")
+        if plate_number:
+            updates.append(f"Vehicle: {plate_number}")
+        if services:
+            service_list = [s.strip() for s in services.split(',') if s.strip()]
+            updates.append(f"Services: {', '.join(service_list)}")
+        if item_name:
+            item_info = item_name
+            if brand:
+                item_info += f" ({brand})"
+            if quantity:
+                item_info += f" × {quantity}"
+            updates.append(f"Item: {item_info}")
+        if final_est_duration:
+            updates.append(f"Est. Duration: {final_est_duration} minutes")
+
         return JsonResponse({
             'success': True,
-            'message': 'Order updated successfully',
+            'message': ' • '.join(updates),
             'order_id': order.id,
-            'order_number': order.order_number
+            'order_number': order.order_number,
+            'updates': updates
         }, status=200)
 
     except Exception as e:
