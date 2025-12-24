@@ -292,10 +292,32 @@
 #editOrderDetailsModal + .modal-backdrop {
   opacity: 0.3 !important;
   background-color: #000 !important;
+  pointer-events: auto !important;
 }
 
 .modal-backdrop.show {
   opacity: 0.3 !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure modal content is interactive */
+#editOrderDetailsModal .modal-dialog {
+  pointer-events: auto !important;
+}
+
+#editOrderDetailsModal .modal-content {
+  pointer-events: auto !important;
+}
+
+/* Ensure all buttons and form elements are clickable */
+#editOrderDetailsModal .btn,
+#editOrderDetailsModal .form-control,
+#editOrderDetailsModal .form-select,
+#editOrderDetailsModal button,
+#editOrderDetailsModal input,
+#editOrderDetailsModal select,
+#editOrderDetailsModal textarea {
+  pointer-events: auto !important;
 }
 
 /* Responsive adjustments */
