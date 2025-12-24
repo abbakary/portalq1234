@@ -254,13 +254,13 @@ def api_check_plate(request):
 @login_required
 @require_http_methods(["GET"])
 def api_service_types(request):
-    """Return list of active service types, addons, and inventory items for UI."""
+    """Return list of active service types, addons, inventory items, and labour codes for UI."""
     try:
         svc_qs = ServiceType.objects.filter(is_active=True).order_by('name')
-        service_types = [{'name': s.name, 'estimated_minutes': s.estimated_minutes or 0} for s in svc_qs]
+        service_types = [{'id': s.id, 'name': s.name, 'estimated_minutes': s.estimated_minutes or 0} for s in svc_qs]
 
         addon_qs = ServiceAddon.objects.filter(is_active=True).order_by('name')
-        service_addons = [{'name': a.name, 'estimated_minutes': a.estimated_minutes or 0} for a in addon_qs]
+        service_addons = [{'id': a.id, 'name': a.name, 'estimated_minutes': a.estimated_minutes or 0} for a in addon_qs]
 
         items_qs = InventoryItem.objects.select_related('brand').filter(is_active=True).order_by('brand__name', 'name')
         inventory_items = []
@@ -274,18 +274,25 @@ def api_service_types(request):
                 'price': float(item.price or 0)
             })
 
-        logger.debug(f"api_service_types: Returning {len(inventory_items)} inventory items")
+        # Load labour codes for service and labour order types
+        from .models import LabourCode
+        labour_codes_qs = LabourCode.objects.filter(is_active=True).order_by('code')
+        labour_codes = [{'id': lc.id, 'code': lc.code, 'item_name': lc.item_name, 'description': lc.description, 'brand': lc.brand or 'N/A'} for lc in labour_codes_qs]
+
+        logger.debug(f"api_service_types: Returning {len(inventory_items)} inventory items and {len(labour_codes)} labour codes")
         return JsonResponse({
             'service_types': service_types,
             'service_addons': service_addons,
-            'inventory_items': inventory_items
+            'inventory_items': inventory_items,
+            'labour_codes': labour_codes
         })
     except Exception as e:
         logger.error(f"Error fetching service types: {e}", exc_info=True)
         return JsonResponse({
             'service_types': [],
             'service_addons': [],
-            'inventory_items': []
+            'inventory_items': [],
+            'labour_codes': []
         }, status=500)
 
 

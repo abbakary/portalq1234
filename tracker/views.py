@@ -550,7 +550,20 @@ def dashboard(request: HttpRequest):
                 today_vat = Decimal(str(today_gross_sums.get('today_vat_sum')))
 
             # Revenue by branch (Gross Value)
-            branch_sums = invoices_qs.values('branch__name').annotate(
+            # Logic:
+            # - If user is superuser/admin with NO assigned branch (main branch admin): show ALL branches
+            # - If user has an assigned branch (normal user or branch-scoped admin): show ONLY their branch
+
+            user_is_main_branch_admin = getattr(request.user, 'is_superuser', False) and _branch is None
+
+            if user_is_main_branch_admin:
+                # Main branch admin/superuser - show all branches
+                all_invoices = Invoice.objects.all()
+            else:
+                # Branch-scoped user - show only their branch invoices
+                all_invoices = invoices_qs
+
+            branch_sums = all_invoices.values('branch__name').annotate(
                 total=Sum('total_amount')
             ).order_by('branch__name')
 
@@ -640,6 +653,7 @@ def dashboard(request: HttpRequest):
             'today_net_revenue': today_net_revenue,                    # Net revenue today
             'today_vat': today_vat,                                    # VAT today
             'revenue_by_branch_tsh': revenue_by_branch_tsh,
+            'show_all_branches': user_is_main_branch_admin,  # Flag for template: show all branches if main admin
             # Revenue breakdown by order type
             'revenue_by_type': revenue_by_type,
             'revenue_by_type_this_month': revenue_by_type_this_month,
@@ -679,7 +693,7 @@ def dashboard(request: HttpRequest):
     # Use completed_today from metrics if available, otherwise calculate fresh
     completed_today_final = metrics.get('completed_today', completed_today)
     
-    context = {**metrics, "recent_orders": recent_orders, "completed_today": completed_today_final, "current_time": timezone.now(), "revenue_by_branch_tsh": revenue_by_branch_tsh}
+    context = {**metrics, "recent_orders": recent_orders, "completed_today": completed_today_final, "current_time": timezone.now(), "revenue_by_branch_tsh": revenue_by_branch_tsh, "show_all_branches": user_is_main_branch_admin}
     # render after charts
 
     # Build sales_chart_json (monthly Orders vs Completed for last 12 months)

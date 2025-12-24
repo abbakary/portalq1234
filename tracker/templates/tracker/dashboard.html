@@ -677,10 +677,14 @@
 </div>
 
 <!-- Revenue by Branch Section -->
+{% if show_all_branches or revenue_by_branch_tsh %}
 <div class="container-fluid mb-2">
   <div class="card shadow-sm">
     <div class="card-body py-2">
-      <h6 class="card-title mb-2"><i class="fa fa-sitemap me-1"></i>Gross Revenue by Branch</h6>
+      <h6 class="card-title mb-2">
+        <i class="fa fa-sitemap me-1"></i>Gross Revenue by Branch
+        {% if show_all_branches %}<span class="badge bg-primary ms-2">All Branches</span>{% else %}<span class="badge bg-secondary ms-2">Your Branch</span>{% endif %}
+      </h6>
       <div class="table-responsive">
         <table class="table table-sm branch-revenue-table mb-0">
           <thead class="table-light">
@@ -704,6 +708,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 
 
