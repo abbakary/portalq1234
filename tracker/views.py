@@ -653,6 +653,7 @@ def dashboard(request: HttpRequest):
             'today_net_revenue': today_net_revenue,                    # Net revenue today
             'today_vat': today_vat,                                    # VAT today
             'revenue_by_branch_tsh': revenue_by_branch_tsh,
+            'show_all_branches': user_is_main_branch_admin,  # Flag for template: show all branches if main admin
             # Revenue breakdown by order type
             'revenue_by_type': revenue_by_type,
             'revenue_by_type_this_month': revenue_by_type_this_month,
