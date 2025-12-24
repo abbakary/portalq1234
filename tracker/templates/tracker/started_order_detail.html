@@ -1258,20 +1258,16 @@ document.addEventListener('DOMContentLoaded', function(){
 
       fetch(this.action, {
         method: 'POST',
-        body: formData,
-        headers: { 'X-CSRFToken': getCSRFToken(), 'X-Requested-With': 'XMLHttpRequest' }
+        body: formData
       })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          alert('Order details updated successfully!');
+      .then(r => {
+        if (r.ok) {
+          // Reload page to show updated order details
           setTimeout(() => {
-            const modal = bootstrap.Modal.getInstance(editOrderModal);
-            if (modal) modal.hide();
             window.location.reload();
           }, 500);
         } else {
-          alert(data.message || 'Failed to update order details.');
+          alert('Failed to update order details. Status: ' + r.status);
           submitBtn.innerHTML = originalText;
           submitBtn.disabled = false;
         }
