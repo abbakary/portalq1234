@@ -1092,6 +1092,25 @@ def api_create_order_from_modal(request):
 
             order = OrderService.create_order(**order_kwargs)
 
+            # For sales orders, adjust inventory
+            if order_type == 'sales':
+                try:
+                    item_name = order_kwargs.get('item_name')
+                    brand = order_kwargs.get('brand')
+                    quantity = order_kwargs.get('quantity')
+
+                    if item_name and brand and quantity:
+                        qty_int = int(quantity) if isinstance(quantity, (str, int)) and str(quantity).isdigit() else 0
+                        if qty_int > 0:
+                            from .utils import adjust_inventory
+                            ok, _, remaining = adjust_inventory(item_name, brand, -qty_int)
+                            if ok:
+                                logger.info(f"Inventory adjusted for order {order.id}: {item_name} ({brand}) -{qty_int}, remaining: {remaining}")
+                            else:
+                                logger.warning(f"Failed to adjust inventory for order {order.id}: {item_name} ({brand})")
+                except Exception as e:
+                    logger.warning(f"Failed to adjust inventory for sales order {order.id}: {e}")
+
             # For upload type, create an invoice with extracted data
             if order_type == 'upload':
                 try:
