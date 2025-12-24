@@ -454,6 +454,8 @@ def started_order_detail(request, order_id):
                 item_name_manual = request.POST.get('item_name_manual') or None
                 item_brand_manual = request.POST.get('item_brand_manual') or None
 
+                logger.info(f"Updating order {order.id} with: type={new_order_type}, services={services}, labour_codes={labour_codes}, est={est}, item_id={item_id}, labour_code_id={labour_code_id}, manual_item={item_name_manual}")
+
                 # Handle order type change
                 if new_order_type and new_order_type != order.type:
                     old_type = order.type
