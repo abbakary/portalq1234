@@ -137,13 +137,13 @@
   window.ensureCardContentVisible = function() {
     const editModal = document.getElementById('editOrderDetailsModal');
     if (!editModal || !editModal.classList.contains('show')) return;
-    
+
     const cards = editModal.querySelectorAll('.labour-code-card, .service-card');
     cards.forEach(function(card) {
       // Remove any height restrictions from cards
       card.style.minHeight = 'auto';
       card.style.maxHeight = 'none';
-      
+
       // Make text and icons visible
       const textElements = card.querySelectorAll('*');
       textElements.forEach(function(el) {
@@ -153,5 +153,41 @@
       });
     });
   };
+
+  /**
+   * Enable all interactive elements in the modal
+   */
+  function enableAllInteractiveElements(modal) {
+    if (!modal) return;
+
+    // Enable all buttons
+    const buttons = modal.querySelectorAll('button, [role="button"]');
+    buttons.forEach(function(btn) {
+      btn.disabled = false;
+      btn.removeAttribute('disabled');
+      btn.style.pointerEvents = 'auto';
+      btn.style.cursor = 'pointer';
+    });
+
+    // Enable all form elements
+    const inputs = modal.querySelectorAll('input, select, textarea');
+    inputs.forEach(function(input) {
+      input.disabled = false;
+      input.removeAttribute('disabled');
+      input.style.pointerEvents = 'auto';
+      input.style.cursor = 'pointer';
+    });
+
+    // Ensure modal dialog and content have proper pointer events
+    const modalDialog = modal.querySelector('.modal-dialog');
+    const modalContent = modal.querySelector('.modal-content');
+
+    if (modalDialog) {
+      modalDialog.style.pointerEvents = 'auto';
+    }
+    if (modalContent) {
+      modalContent.style.pointerEvents = 'auto';
+    }
+  }
 
 })();
