@@ -1,12 +1,14 @@
-/* Edit Order Details Modal - Isolated Styles */
+/* ============================================
+   Edit Order Modal - Improved Styles
+   ============================================ */
 
-/* Modal Container - Ensure full visibility */
+/* Modal Container */
 #editOrderDetailsModal {
   --bs-modal-zindex: 1050 !important;
 }
 
 #editOrderDetailsModal .modal-dialog {
-  max-width: 800px !important;
+  max-width: 900px !important;
   margin: 1.75rem auto !important;
 }
 
@@ -14,16 +16,17 @@
   border: 1px solid #dee2e6;
   border-radius: 8px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-  max-height: 90vh;
+  max-height: calc(100vh - 3.5rem);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
+/* Modal Header */
 #editOrderDetailsModal .modal-header {
   background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
   color: white;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid #dee2e6;
   flex-shrink: 0;
 }
@@ -40,27 +43,28 @@
   filter: brightness(0) invert(1);
 }
 
-/* Modal Body - Scrollable content */
+/* Modal Body - Main scrollable area */
 #editOrderDetailsModal .modal-body {
   padding: 1.5rem;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
-  min-height: auto;
+  min-height: 0;
 }
 
-/* Ensure proper scrolling */
+/* Custom scrollbar */
 #editOrderDetailsModal .modal-body::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 #editOrderDetailsModal .modal-body::-webkit-scrollbar-track {
   background: #f1f1f1;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 #editOrderDetailsModal .modal-body::-webkit-scrollbar-thumb {
   background: #888;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 #editOrderDetailsModal .modal-body::-webkit-scrollbar-thumb:hover {
@@ -73,6 +77,9 @@
   padding: 1rem 1.5rem;
   background: #f8f9fa;
   flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 /* Form Elements */
@@ -97,11 +104,7 @@
   box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 
-/* Order Type Section */
-#editOrderDetailsModal .mb-4 {
-  margin-bottom: 1.5rem;
-}
-
+/* Alert styles */
 #editOrderDetailsModal .alert-info {
   background-color: #cfe2ff;
   border: 1px solid #b6d4fe;
@@ -109,9 +112,10 @@
   border-radius: 4px;
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
+  margin-bottom: 0;
 }
 
-/* Item Selection Card */
+/* Card styles */
 #editOrderDetailsModal .card {
   border: 1px solid #dee2e6;
   border-radius: 6px;
@@ -167,7 +171,6 @@
   background: transparent;
 }
 
-/* Tab Content */
 #editOrderDetailsModal .tab-content {
   border: none;
 }
@@ -176,22 +179,16 @@
   padding: 0;
 }
 
-/* Services/Labour Codes Container */
+/* Services container - FIXED: Display content naturally */
 #editOrderDetailsModal #editServicesContainer {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
-  max-height: 400px;
-  overflow-y: auto;
+  max-height: none;
+  overflow-y: visible;
 }
 
-@media (min-width: 768px) {
-  #editOrderDetailsModal #editServicesContainer {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  }
-}
-
-/* Labour Code and Service Cards - Responsive */
+/* Labour code and service cards */
 #editOrderDetailsModal .labour-code-card,
 #editOrderDetailsModal .service-card {
   position: relative;
@@ -202,7 +199,7 @@
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  min-height: 150px;
+  min-height: auto;
   display: flex;
   flex-direction: column;
 }
@@ -218,22 +215,16 @@
   border-color: #0d6efd;
   border-width: 2px;
   background-color: #f0f4ff;
-  box-shadow: 0 4px 14px rgba(13, 110, 253, 0.4), inset 0 0 0 2px #0d6efd;
+  box-shadow: 0 4px 14px rgba(13, 110, 253, 0.4);
 }
 
-#editOrderDetailsModal .labour-code-card .card-body,
-#editOrderDetailsModal .service-card .card-body {
-  padding: 0;
-}
-
-/* Icon styling in cards */
 #editOrderDetailsModal .labour-code-card .fa,
 #editOrderDetailsModal .service-card .fa {
   font-size: 1.25rem;
   margin-bottom: 0.5rem;
 }
 
-/* Check icon */
+/* Visible check icon */
 #editOrderDetailsModal .labour-code-card i.fa-check-circle,
 #editOrderDetailsModal .service-card i.fa-check-circle {
   position: absolute;
@@ -250,23 +241,18 @@
   opacity: 1;
 }
 
-/* Form Checkbox - Hidden but accessible */
+/* FIXED: Hidden checkboxes without breaking layout */
 #editOrderDetailsModal .form-check-input,
 #editOrderDetailsModal .edit-labour-code-checkbox,
 #editOrderDetailsModal .edit-service-checkbox {
   position: absolute;
   opacity: 0;
-  width: 100%;
-  height: 100%;
+  width: 0;
+  height: 0;
   cursor: pointer;
   margin: 0;
   padding: 0;
-  z-index: 1;
-}
-
-#editOrderDetailsModal .form-check-label {
-  cursor: pointer;
-  user-select: none;
+  z-index: -1;
 }
 
 /* Buttons */
@@ -276,10 +262,6 @@
   font-weight: 500;
   transition: all 0.2s ease;
   white-space: nowrap;
-}
-
-#editOrderDetailsModal .btn:hover {
-  transform: translateY(-1px);
 }
 
 #editOrderDetailsModal .btn-primary {
@@ -303,25 +285,22 @@
   border-color: #565e64;
 }
 
-/* Modal Backdrop */
-.modal-backdrop.fade {
+/* Modal backdrop */
+#editOrderDetailsModal + .modal-backdrop {
   opacity: 0.5;
   background-color: #000;
 }
 
-.modal-backdrop.fade.show {
-  opacity: 0.5;
-}
-
 /* Responsive adjustments */
-@media (max-width: 576px) {
+@media (max-width: 768px) {
   #editOrderDetailsModal .modal-dialog {
-    margin: 0.5rem !important;
+    margin: 0.5rem auto !important;
     width: calc(100% - 1rem) !important;
   }
 
   #editOrderDetailsModal .modal-content {
-    max-height: 95vh;
+    max-height: calc(100vh - 1rem);
+    border-radius: 6px;
   }
 
   #editOrderDetailsModal .modal-body {
@@ -333,22 +312,21 @@
     flex-direction: column;
   }
 
-  #editOrderDetailsModal .btn {
+  #editOrderDetailsModal .modal-footer .btn {
     width: 100%;
   }
 
-  #editOrderDetailsModal .btn:not(:last-child) {
+  #editOrderDetailsModal .modal-footer .btn:not(:last-child) {
     margin-bottom: 0.5rem;
   }
 
   #editOrderDetailsModal #editServicesContainer {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 0.75rem;
-    max-height: 300px;
   }
 }
 
-/* Animation for modal entrance */
+/* Modal entrance animation */
 @keyframes modalSlideIn {
   from {
     opacity: 0;
