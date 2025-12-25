@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import logging
 import pymysql
 
 # Apply compatibility monkeypatch for Django template Context on Python 3.14+
@@ -92,6 +93,15 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "pos_tracker.wsgi.application"
+
+# URL Routing Configuration for subdirectory deployments (cPanel, etc.)
+# If deployed under a subdirectory, set FORCE_SCRIPT_NAME environment variable
+# Example: FORCE_SCRIPT_NAME=/app or FORCE_SCRIPT_NAME=/~username/myapp
+FORCE_SCRIPT_NAME = os.environ.get('FORCE_SCRIPT_NAME', '')
+if FORCE_SCRIPT_NAME and FORCE_SCRIPT_NAME != '/':
+    FORCE_SCRIPT_NAME = FORCE_SCRIPT_NAME.rstrip('/')
+else:
+    FORCE_SCRIPT_NAME = None
 
  # DATABASE CONFIGURATION (MySQL) 
 # DATABASES = {

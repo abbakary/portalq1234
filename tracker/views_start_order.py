@@ -401,9 +401,15 @@ def started_order_detail(request, order_id):
     - Manually enter customer details
     - Upload document and auto-populate
     - Edit and complete the order
-    
+
     GET params:
     - tab: Active tab ('overview', 'customer', 'vehicle', 'document', 'order_details')
+
+    POST actions:
+    - update_customer: Update customer details
+    - update_vehicle: Update vehicle details
+    - update_order_details: Update order type, services, items, and duration
+    - complete_order: Complete the order with signature and delay reason
     """
     user_branch = get_user_branch(request.user)
     is_admin = getattr(request.user, 'is_superuser', False) or getattr(request.user, 'is_staff', False)
@@ -411,23 +417,31 @@ def started_order_detail(request, order_id):
     branch_mismatch = False
     if user_branch and order.branch and order.branch != user_branch:
         branch_mismatch = True
-    
+
     if request.method == 'POST':
         # Handle form submissions for different sections
         action = request.POST.get('action')
+        logger.info(f"POST request to started_order_detail for order {order_id}, action='{action}', user={request.user.username}")
 
         if action == 'update_customer':
             # Update customer details
-            order.customer.full_name = request.POST.get('full_name', order.customer.full_name)
-            order.customer.phone = request.POST.get('phone', order.customer.phone)
-            order.customer.email = request.POST.get('email', order.customer.email) or None
-            order.customer.address = request.POST.get('address', order.customer.address) or None
-            order.customer.customer_type = request.POST.get('customer_type', order.customer.customer_type)
-            personal_subtype = request.POST.get('personal_subtype', '').strip()
-            if personal_subtype:
-                order.customer.personal_subtype = personal_subtype
-            order.customer.save()
-            
+            try:
+                order.customer.full_name = request.POST.get('full_name', order.customer.full_name)
+                order.customer.phone = request.POST.get('phone', order.customer.phone)
+                order.customer.email = request.POST.get('email', order.customer.email) or None
+                order.customer.address = request.POST.get('address', order.customer.address) or None
+                order.customer.customer_type = request.POST.get('customer_type', order.customer.customer_type)
+                personal_subtype = request.POST.get('personal_subtype', '').strip()
+                if personal_subtype:
+                    order.customer.personal_subtype = personal_subtype
+                order.customer.save()
+                messages.success(request, 'Customer information updated successfully.')
+                logger.info(f"Customer {order.customer.id} updated for order {order.id}")
+            except Exception as e:
+                logger.error(f"Error updating customer for order {order.id}: {e}", exc_info=True)
+                messages.error(request, f'Error updating customer: {str(e)}')
+            return redirect('tracker:started_order_detail', order_id=order.id)
+
         elif action == 'update_vehicle':
             # Update vehicle details
             if order.vehicle:
@@ -435,6 +449,8 @@ def started_order_detail(request, order_id):
                 order.vehicle.model = request.POST.get('model', order.vehicle.model)
                 order.vehicle.vehicle_type = request.POST.get('vehicle_type', order.vehicle.vehicle_type)
                 order.vehicle.save()
+            messages.success(request, 'Vehicle information updated successfully.')
+            return redirect('tracker:started_order_detail', order_id=order.id)
 
         elif action == 'update_order_details':
             # Update selected services, add-ons, items, estimated duration, and order type
@@ -453,6 +469,8 @@ def started_order_detail(request, order_id):
                 labour_code_id = request.POST.get('labour_code_id') or None
                 item_name_manual = request.POST.get('item_name_manual') or None
                 item_brand_manual = request.POST.get('item_brand_manual') or None
+
+                logger.info(f"Updating order {order.id} with: type={new_order_type}, services={services}, labour_codes={labour_codes}, est={est}, item_id={item_id}, labour_code_id={labour_code_id}, manual_item={item_name_manual}")
 
                 # Handle order type change
                 if new_order_type and new_order_type != order.type:
@@ -564,7 +582,9 @@ def started_order_detail(request, order_id):
                 # Redirect to dashboard after updating order details
                 return redirect('tracker:started_orders_dashboard')
             except Exception as e:
-                logger.error(f"Error updating order details: {e}")
+                logger.error(f"Error updating order details: {e}", exc_info=True)
+                messages.error(request, f'Error updating order details: {str(e)}')
+                return redirect('tracker:started_order_detail', order_id=order.id)
 
         
         elif action == 'complete_order':
@@ -625,7 +645,14 @@ def started_order_detail(request, order_id):
 
             messages.success(request, 'Order completed successfully.')
             return redirect('tracker:started_orders_dashboard')
-    
+
+        else:
+            # Unknown action or no action provided
+            if action:
+                logger.warning(f"Unknown action '{action}' for order {order.id}")
+                messages.warning(request, f'Unknown action: {action}')
+            return redirect('tracker:started_order_detail', order_id=order.id)
+
     active_tab = request.GET.get('tab', 'overview')
 
     # Check if order exceeds 2+ hours
@@ -641,16 +668,22 @@ def started_order_detail(request, order_id):
 
     # Fetch delay reason categories and reasons for template rendering
     delay_reasons_by_category = {}
+    import json
     try:
         from .models import DelayReasonCategory, DelayReason
         for category in DelayReasonCategory.objects.filter(is_active=True):
             reasons = list(DelayReason.objects.filter(category=category, is_active=True).values('id', 'reason_text'))
             delay_reasons_by_category[category.category] = reasons
-        # Convert to JSON string for template
-        import json
+    except Exception as e:
+        logger.warning(f"Error fetching delay reasons: {e}")
+        delay_reasons_by_category = {}
+
+    # Always convert to JSON string for template rendering
+    try:
         delay_reasons_for_template = json.dumps(delay_reasons_by_category)
-    except Exception:
-        delay_reasons_for_template = delay_reasons_by_category
+    except Exception as e:
+        logger.error(f"Error converting delay reasons to JSON: {e}")
+        delay_reasons_for_template = "{}"
 
     context = {
         'order': order,

@@ -494,6 +494,7 @@ class OrderForm(forms.ModelForm):
             "questions",
             "contact_preference",
             "follow_up_date",
+            "estimated_duration",
         ]
         widgets = {
             "type": forms.Select(attrs={'class': 'form-select'}),
@@ -508,6 +509,7 @@ class OrderForm(forms.ModelForm):
             "questions": forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             "contact_preference": forms.Select(attrs={'class': 'form-select'}),
             "follow_up_date": forms.DateInput(attrs={"type": "date", 'class': 'form-control'}),
+            "estimated_duration": forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Minutes'}),
         }
 
     def __init__(self, *args, **kwargs):

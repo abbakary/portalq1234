@@ -1,0 +1,18 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Handle static files and media files
+RewriteRule ^static/(.*)$ - [L]
+RewriteRule ^media/(.*)$ - [L]
+
+# Redirect all other requests to Django WSGI application
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /index.py [QSA,L]
+</IfModule>
+
+# If using mod_wsgi (uncomment if applicable):
+# <IfModule mod_wsgi.c>
+#   WSGIScriptAlias / /path/to/your/app/pos_tracker/wsgi.py
+#   WSGIPythonPath /path/to/your/app
+# </IfModule>
