@@ -1287,8 +1287,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const typeInfoMap = {
       'service': 'Service order - Select labour codes or services to perform',
       'sales': 'Sales order - Select item/tire to sell',
-      'labour': 'Labour order - Select labour codes for charges',
-      'inquiry': 'Inquiry - Follow-up with customer'
+      'labour': 'Labour order - Select labour codes for charges'
     };
     orderTypeInfo.textContent = '✓ ' + (typeInfoMap[selectedType] || 'Select appropriate order type');
 
@@ -1309,10 +1308,6 @@ document.addEventListener('DOMContentLoaded', function() {
       servicesLabel.textContent = 'Labour Codes';
       renderEditLabourCodes(allServices.labour_codes || [], 'labour');
       servicesSection.style.display = 'block';
-      if (inventoryTabItem) inventoryTabItem.style.display = 'block';
-    } else {
-      itemSelectionSection.style.display = 'none';
-      servicesSection.style.display = 'none';
       if (inventoryTabItem) inventoryTabItem.style.display = 'block';
     }
   }
