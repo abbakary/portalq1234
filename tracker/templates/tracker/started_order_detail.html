@@ -407,7 +407,86 @@
       width: 100%;
     }
 
-    #editOrderDetailsModal .labour-code-card,
+    #editOrderDetailsModal .labour-code-col {
+      padding: 0.5rem;
+    }
+
+    #editOrderDetailsModal .labour-card-wrapper {
+      height: 100%;
+    }
+
+    #editOrderDetailsModal .labour-code-card {
+      position: relative;
+      border: 2px solid #e8e8e8;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
+      margin-bottom: 0;
+    }
+
+    #editOrderDetailsModal .labour-code-card .labour-check {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      margin: 0;
+      padding: 0;
+      z-index: 1;
+      top: 0;
+      left: 0;
+    }
+
+    #editOrderDetailsModal .labour-code-card .labour-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    #editOrderDetailsModal .labour-code-card .labour-title {
+      font-weight: 600;
+      color: #1a1a1a;
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      line-height: 1.3;
+      hyphens: auto;
+    }
+
+    #editOrderDetailsModal .labour-code-card .labour-badge {
+      display: inline-block;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    #editOrderDetailsModal .labour-code-card .labour-check-icon {
+      color: #27ae60;
+      font-size: 1.5rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+      flex-shrink: 0;
+    }
+
     #editOrderDetailsModal .service-card {
       position: relative;
       border: 1px solid #e0e0e0;
@@ -422,49 +501,6 @@
       flex-direction: column;
       justify-content: flex-start;
       align-items: stretch;
-    }
-
-    #editOrderDetailsModal .labour-code-card .card-body,
-    #editOrderDetailsModal .service-card .card-body {
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: stretch;
-      gap: 0.5rem;
-    }
-
-    #editOrderDetailsModal .labour-code-card .form-check,
-    #editOrderDetailsModal .service-card .form-check {
-      margin-bottom: 0;
-      width: 100%;
-    }
-
-    #editOrderDetailsModal .labour-code-card strong,
-    #editOrderDetailsModal .service-card strong {
-      word-break: break-word;
-      overflow-wrap: break-word;
-      hyphens: auto;
-      line-height: 1.3;
-    }
-
-    #editOrderDetailsModal .labour-code-card small,
-    #editOrderDetailsModal .service-card small {
-      word-break: break-word;
-      overflow-wrap: break-word;
-      hyphens: auto;
-      line-height: 1.3;
-      font-size: 0.8rem;
-    }
-
-    #editOrderDetailsModal .labour-code-card code,
-    #editOrderDetailsModal .service-card code {
-      word-break: break-all;
-      font-size: 0.75rem;
-      background-color: #f5f5f5;
-      padding: 2px 4px;
-      border-radius: 3px;
-      display: inline-block;
     }
 
     #editOrderDetailsModal .labour-code-card:hover,
