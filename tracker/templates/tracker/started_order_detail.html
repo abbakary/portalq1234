@@ -1255,43 +1255,64 @@ document.addEventListener('DOMContentLoaded', function() {
 
     labourCodes.forEach((lc, index) => {
       const col = document.createElement('div');
-      col.className = 'col-md-6 col-lg-4 mb-2';
+      col.className = 'col-12 col-sm-6 col-lg-4 labour-code-col';
       const checkboxId = `edit_lc_${lc.id || index}`;
 
       let categoryIcon = 'fa-tools';
       let categoryColor = '#667eea';
+      let categoryLabel = 'General';
       const category = (lc.category || '').toLowerCase();
       if (category.includes('labour')) {
         categoryIcon = 'fa-hammer';
         categoryColor = '#e74c3c';
+        categoryLabel = 'Labour';
       } else if (category.includes('service')) {
         categoryIcon = 'fa-wrench';
         categoryColor = '#3498db';
+        categoryLabel = 'Service';
       } else if (category.includes('sales')) {
         categoryIcon = 'fa-shopping-cart';
         categoryColor = '#27ae60';
+        categoryLabel = 'Sales';
+      } else if (category.includes('tyre')) {
+        categoryIcon = 'fa-circle-notch';
+        categoryColor = '#f39c12';
+        categoryLabel = 'Tyre';
       }
 
       col.innerHTML = `
-        <div class="labour-code-card" style="cursor: pointer; transition: all 0.3s; border: 1px solid #e0e0e0; border-radius: 6px; padding: 1rem; background: white;">
-          <div class="form-check mb-0">
-            <input class="form-check-input" type="checkbox" id="${checkboxId}" name="labour_codes[]" value="${lc.id}" data-code="${lc.code}" data-name="${lc.item_name || lc.description}" data-brand="${lc.brand || 'N/A'}" style="position: absolute; opacity: 0; width: 0; height: 0; cursor: pointer;">
-            <label class="form-check-label w-100 mb-0" for="${checkboxId}" style="cursor: pointer; display: block;">
-              <div style="display: flex; align-items: start; gap: 0.5rem;">
-                <div style="flex-shrink: 0; padding-top: 0.25rem;">
-                  <i class="fa ${categoryIcon}" style="color: ${categoryColor}; font-size: 1.25rem;"></i>
-                </div>
-                <div style="flex-grow: 1; min-width: 0;">
-                  <strong style="display: block; margin-bottom: 0.5rem; font-size: 0.95rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${lc.item_name || lc.description}</strong>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem;">
-                    <small style="color: #6c757d;"><strong>Code:</strong> <code style="background: #f5f5f5; padding: 2px 4px; border-radius: 3px;">${lc.code}</code></small>
-                    <small style="color: #6c757d;"><strong>Brand:</strong> ${lc.brand || 'N/A'}</small>
+        <div class="labour-card-wrapper">
+          <div class="form-check labour-code-card mb-0" style="cursor: pointer; position: relative; border: 2px solid #e8e8e8; border-radius: 8px; padding: 1rem; background: #ffffff; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);">
+            <input class="form-check-input labour-check" type="checkbox" id="${checkboxId}" name="labour_codes[]" value="${lc.id}" data-code="${lc.code}" data-name="${lc.item_name || lc.description}" data-brand="${lc.brand || 'N/A'}" style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; top: 0; left: 0; z-index: 1; margin: 0;">
+            <label class="form-check-label w-100 mb-0" for="${checkboxId}" style="cursor: pointer; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 0; position: relative; z-index: 0;">
+              <!-- Header with Icon and Category Badge -->
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0;">
+                  <div class="labour-icon" style="flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: ${categoryColor}20;">
+                    <i class="fa ${categoryIcon}" style="color: ${categoryColor}; font-size: 1.5rem;"></i>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div class="labour-title" style="font-weight: 600; color: #1a1a1a; font-size: 0.95rem; margin-bottom: 0.25rem; word-break: break-word; overflow-wrap: break-word; line-height: 1.3;">${lc.item_name || lc.description}</div>
+                    <span class="labour-badge" style="display: inline-block; background: ${categoryColor}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">${categoryLabel}</span>
                   </div>
                 </div>
-                <div style="flex-shrink: 0;">
-                  <i class="fa fa-check-circle" style="color: #27ae60; font-size: 1.5rem; opacity: 0; transition: opacity 0.2s;"></i>
+                <i class="fa fa-check-circle labour-check-icon" style="color: #27ae60; font-size: 1.5rem; opacity: 0; transition: opacity 0.2s; flex-shrink: 0;"></i>
+              </div>
+
+              <!-- Code & Brand Info -->
+              <div style="display: flex; flex-direction: column; gap: 0.5rem; background: #f8f9fa; padding: 0.75rem; border-radius: 6px;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                  <span style="color: #6c757d; font-weight: 500; flex-shrink: 0;">Code:</span>
+                  <code style="background: #ffffff; color: #495057; padding: 3px 6px; border-radius: 4px; border: 1px solid #dee2e6; font-family: monospace; font-size: 0.8rem; font-weight: 500; word-break: break-all;">${lc.code}</code>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                  <span style="color: #6c757d; font-weight: 500; flex-shrink: 0;">Brand:</span>
+                  <span style="color: #495057; font-weight: 500; word-break: break-word; overflow-wrap: break-word;">${lc.brand || '—'}</span>
                 </div>
               </div>
+
+              <!-- Category Detail -->
+              <div style="text-align: center; padding-top: 0.5rem; border-top: 1px solid #e8e8e8; font-size: 0.75rem; color: #999; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${categoryLabel} Item</div>
             </label>
           </div>
         </div>
@@ -1300,10 +1321,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const card = col.querySelector('.labour-code-card');
       const checkbox = col.querySelector('input[type="checkbox"]');
-      const checkIcon = col.querySelector('i.fa-check-circle');
+      const checkIcon = col.querySelector('i.labour-check-icon');
 
       card.addEventListener('click', function(e) {
-        if (e.target.type !== 'checkbox') {
+        if (e.target.type !== 'checkbox' && !e.target.closest('input')) {
           checkbox.checked = !checkbox.checked;
           checkbox.dispatchEvent(new Event('change', { bubbles: true }));
         }
@@ -1311,33 +1332,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
       card.addEventListener('mouseenter', function() {
         if (!checkbox.checked) {
-          this.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.12)';
+          this.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)';
+          this.style.transform = 'translateY(-3px)';
         }
-        this.style.transform = 'translateY(-2px)';
       });
 
       card.addEventListener('mouseleave', function() {
-        if (checkbox.checked) {
-          this.style.boxShadow = '0 4px 14px rgba(102, 126, 234, 0.4)';
-        } else {
-          this.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)';
+        if (!checkbox.checked) {
+          this.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.08)';
+          this.style.transform = 'translateY(0)';
         }
-        this.style.transform = 'translateY(0)';
       });
 
       checkbox.addEventListener('change', function() {
         if (this.checked) {
-          card.style.borderColor = '#667eea';
+          card.style.borderColor = categoryColor;
           card.style.borderWidth = '2px';
-          card.style.backgroundColor = '#f0f4ff';
-          card.style.boxShadow = '0 4px 14px rgba(102, 126, 234, 0.4)';
+          card.style.backgroundColor = `${categoryColor}08`;
+          card.style.boxShadow = `0 6px 18px ${categoryColor}30`;
           checkIcon.style.opacity = '1';
+          col.style.zIndex = '10';
         } else {
-          card.style.borderColor = '#e0e0e0';
-          card.style.borderWidth = '1px';
-          card.style.backgroundColor = 'white';
-          card.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)';
+          card.style.borderColor = '#e8e8e8';
+          card.style.borderWidth = '2px';
+          card.style.backgroundColor = '#ffffff';
+          card.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.08)';
           checkIcon.style.opacity = '0';
+          col.style.zIndex = 'auto';
         }
       });
     });
