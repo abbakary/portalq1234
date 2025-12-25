@@ -810,23 +810,21 @@
     @media (max-width: 480px) {
       #editOrderDetailsModal .labour-code-col,
       #editOrderDetailsModal .service-col {
-        padding: 0.3rem;
+        padding: 0;
       }
 
       #editOrderDetailsModal .labour-code-card,
       #editOrderDetailsModal .service-card {
-        padding: 0.65rem;
+        padding: 0.75rem !important;
+        gap: 0.5rem !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
       }
 
-      #editOrderDetailsModal .labour-code-card .labour-title,
-      #editOrderDetailsModal .service-card .service-title {
-        font-size: 0.8rem;
-      }
-
-      #editOrderDetailsModal .labour-code-card .labour-badge,
-      #editOrderDetailsModal .service-card .service-badge {
-        font-size: 0.55rem;
-        padding: 2px 5px;
+      #editOrderDetailsModal .labour-code-card label,
+      #editOrderDetailsModal .service-card label {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem !important;
       }
 
       #editOrderDetailsModal .labour-code-card .labour-icon,
